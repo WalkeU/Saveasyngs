@@ -1,0 +1,23 @@
+# TODO
+
+- [x] backend: Node.js + TypeScript + Fastify
+- [x] db: SQLite (better-sqlite3)
+- [x] frontend: React + Vite + TypeScript
+- [x] prod proxy: Caddy
+- [x] dev: Vite beépített proxy, nincs külön proxy konténer
+- [x] workflow: egy `dev` branch, nincs feature branch, `dev` → `master` release-enként
+- [ ] db-hozzáférés: nyers SQL vagy Kysely?
+- [ ] grafikon library a kimutatásokhoz (pl. Recharts)
+- [ ] migrációkezelés az SQLite sémához
+- [ ] prod port/hostname a Caddy előtt
+- [x] git repo init, `dev` branch létrehozása
+- [x] mappastruktúra: `backend/`, `frontend/`, `docker/`
+- [x] backend alapváz (Fastify, health endpoint, SQLite kapcsolat)
+- [x] frontend alapváz (Vite + React, alap layout)
+- [x] első DB séma: expenses, categories, savings_goals, savings_contributions
+- [ ] `docker-compose.dev.yml` — hot reload mindkét oldalon
+- [ ] `docker-compose.prod.yml` — multi-stage build, Caddy
+- [ ] első feature: költés rögzítése + listázása
+- [ ] export (CSV) a kimutatásokból
+- [ ] ismétlődő költések (pl. havi rezsi automatikus felvétele)
+- [ ] több megtakarítási cél párhuzamos követése grafikonon
