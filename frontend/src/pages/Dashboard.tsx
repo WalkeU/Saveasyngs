@@ -3,13 +3,33 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api } from "../api";
 import { categoryColor, formatMoney, toLocalDateInput } from "../format";
 import { CategoryIcon } from "../IconPicker";
-import type { ReportByCategory, ReportSummary, TransactionType } from "../types";
+import { IconChevronLeft, IconChevronRight } from "../icons";
+import type { MonthlyComparison, ReportByCategory, ReportSummary, TransactionType } from "../types";
 
 function monthBounds(offset = 0) {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
   return { from: toLocalDateInput(start), to: toLocalDateInput(end) };
+}
+
+function monthKey(offset = 0) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function shiftMonthKey(month: string, delta: number) {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthLabel(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "long" }).format(
+    new Date(y, m - 1, 1),
+  );
 }
 
 export function Dashboard() {
@@ -36,6 +56,18 @@ export function Dashboard() {
     () => breakdown.reduce((sum, row) => sum + row.total, 0),
     [breakdown],
   );
+
+  const [comparisonMonth, setComparisonMonth] = useState(monthKey());
+  const [comparison, setComparison] = useState<MonthlyComparison | null>(null);
+  const [comparisonLoading, setComparisonLoading] = useState(true);
+
+  useEffect(() => {
+    setComparisonLoading(true);
+    api.reports
+      .monthlyComparison(comparisonMonth)
+      .then(setComparison)
+      .finally(() => setComparisonLoading(false));
+  }, [comparisonMonth]);
 
   return (
     <div>
@@ -147,6 +179,84 @@ export function Dashboard() {
               })}
             </div>
           </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h2 style={{ fontSize: 17 }}>Havi összehasonlítás</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              className="btn btn-icon btn-ghost"
+              onClick={() => setComparisonMonth((m) => shiftMonthKey(m, -1))}
+              title="Előző hónap"
+            >
+              <IconChevronLeft />
+            </button>
+            <span style={{ fontSize: 13.5, minWidth: 130, textAlign: "center", textTransform: "capitalize" }}>
+              {formatMonthLabel(comparisonMonth)}
+            </span>
+            <button
+              className="btn btn-icon btn-ghost"
+              onClick={() => setComparisonMonth((m) => shiftMonthKey(m, 1))}
+              title="Következő hónap"
+              disabled={comparisonMonth >= monthKey()}
+            >
+              <IconChevronRight />
+            </button>
+          </div>
+        </div>
+
+        {!comparisonLoading && comparison && comparison.categories.length === 0 && (
+          <div className="empty-state">Nincs kiadás ebben a hónapban.</div>
+        )}
+
+        {comparison && comparison.categories.length > 0 && (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Kategória</th>
+                <th style={{ textAlign: "right" }}>Ez a hónap</th>
+                <th style={{ textAlign: "right" }}>Előző hónap</th>
+                <th style={{ textAlign: "right" }}>Változás</th>
+                <th style={{ textAlign: "right" }}>Havi átlag</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.categories.map((row) => (
+                <tr key={row.category_id ?? "none"}>
+                  <td>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <CategoryIcon icon={row.category_icon} color={categoryColor(row.category_id, row.category_color)} />
+                      {row.category_name}
+                    </span>
+                  </td>
+                  <td className="tabular" style={{ textAlign: "right" }}>
+                    {formatMoney(row.current)}
+                  </td>
+                  <td className="tabular" style={{ textAlign: "right", color: "var(--ink-soft)" }}>
+                    {formatMoney(row.previous)}
+                  </td>
+                  <td
+                    className={`tabular ${row.delta > 0 ? "amount-expense" : row.delta < 0 ? "amount-income" : ""}`}
+                    style={{ textAlign: "right", whiteSpace: "nowrap" }}
+                  >
+                    {row.delta > 0 ? "+" : row.delta < 0 ? "−" : "±"}
+                    {formatMoney(Math.abs(row.delta))}
+                    {row.deltaPercent !== null && (
+                      <span style={{ color: "var(--ink-faint)", marginLeft: 5 }}>
+                        ({row.delta >= 0 ? "+" : "−"}
+                        {Math.abs(row.deltaPercent).toFixed(0)}%)
+                      </span>
+                    )}
+                  </td>
+                  <td className="tabular" style={{ textAlign: "right", color: "var(--ink-soft)" }}>
+                    {formatMoney(row.average)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

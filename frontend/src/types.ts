@@ -51,6 +51,25 @@ export interface ReportSummary {
   byMonth: { month: string; type: TransactionType; total: number }[];
 }
 
+export interface MonthlyComparisonCategory {
+  category_id: number | null;
+  category_name: string;
+  category_color: string | null;
+  category_icon: string | null;
+  current: number;
+  previous: number;
+  delta: number;
+  deltaPercent: number | null;
+  average: number;
+}
+
+export interface MonthlyComparison {
+  month: string;
+  previousMonth: string;
+  monthCount: number;
+  categories: MonthlyComparisonCategory[];
+}
+
 export interface ImportPreview {
   headers: string[];
   sampleRows: Record<string, string>[];

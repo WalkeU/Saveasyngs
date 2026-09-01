@@ -5,6 +5,9 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- added a "Havi összehasonlítás" (monthly comparison) card on Áttekintés: per expense category, current vs previous month with the delta (amount + %), plus a monthly average across all months of data; month navigable with arrows
+- fixed an "ambiguous column name: type" 500 on GET /api/transactions?type=... (categories.type collided with transactions.type after the categories JOIN)
+
 - .env is no longer tracked in git (gitignored now); added .env.example as the checked-in template, README updated to `cp .env.example .env` on first setup
 
 - added a "Legacy kategorizálás" section on the Import page, shown only when ENABLE_LEGACY_CATEGORY_IMPORT is on (GET /api/config exposes the flag), so the backfill feature has a UI trigger instead of curl-only

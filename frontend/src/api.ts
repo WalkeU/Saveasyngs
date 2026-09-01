@@ -4,6 +4,7 @@ import type {
   ImportPreview,
   ImportResult,
   LegacyImportResult,
+  MonthlyComparison,
   ReportByCategory,
   ReportSummary,
   Transaction,
@@ -89,6 +90,8 @@ export const api = {
       ).toString();
       return request<ReportSummary>(`/api/reports/summary${query ? `?${query}` : ""}`);
     },
+    monthlyComparison: (month?: string) =>
+      request<MonthlyComparison>(`/api/reports/monthly-comparison${month ? `?month=${month}` : ""}`),
   },
   import: {
     preview: (file: File) => {

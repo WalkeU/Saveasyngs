@@ -37,7 +37,7 @@ export async function transactionRoutes(app: FastifyInstance) {
     const params: unknown[] = [];
 
     if (type) {
-      where.push("type = ?");
+      where.push("transactions.type = ?");
       params.push(type);
     }
     if (categoryId === "none") {

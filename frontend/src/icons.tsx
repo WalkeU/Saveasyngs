@@ -89,6 +89,22 @@ export function IconChevronDown({ size = 14 }: IconProps) {
   );
 }
 
+export function IconChevronLeft({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  );
+}
+
+export function IconChevronRight({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
 export function IconLanguage({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
