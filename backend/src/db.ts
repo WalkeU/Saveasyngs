@@ -29,19 +29,42 @@ try {
 }
 
 const defaultCategories: Array<{ name: string; type: "expense" | "income" }> = [
-  { name: "Étkezés", type: "expense" },
-  { name: "Bevásárlás", type: "expense" },
-  { name: "Lakhatás", type: "expense" },
-  { name: "Rezsi", type: "expense" },
-  { name: "Közlekedés", type: "expense" },
-  { name: "Szórakozás", type: "expense" },
-  { name: "Egészség", type: "expense" },
-  { name: "Utazás", type: "expense" },
-  { name: "Egyéb", type: "expense" },
-  { name: "Fizetés", type: "income" },
-  { name: "Utalás", type: "income" },
-  { name: "Egyéb bevétel", type: "income" },
+  { name: "Home", type: "expense" },
+  { name: "Food", type: "expense" },
+  { name: "Nights", type: "expense" },
+  { name: "Entertainment", type: "expense" },
+  { name: "Clothing", type: "expense" },
+  { name: "Beauty", type: "expense" },
+  { name: "Health", type: "expense" },
+  { name: "Sport", type: "expense" },
+  { name: "IT", type: "expense" },
+  { name: "Travel", type: "expense" },
+  { name: "Vacation", type: "expense" },
+  { name: "Bills", type: "expense" },
+  { name: "General", type: "expense" },
+  { name: "Unknown", type: "expense" },
+  { name: "Gifts", type: "expense" },
+  { name: "Salary", type: "income" },
+  { name: "Transfer", type: "income" },
+  { name: "Other Income", type: "income" },
 ];
+
+function migrate(name: string, run: () => void) {
+  const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
+  if (applied) return;
+  db.transaction(() => {
+    run();
+    db.prepare("INSERT INTO _migrations (name) VALUES (?)").run(name);
+  })();
+}
+
+// replaces the old Hungarian/interim default categories with the fixed English
+// taxonomy above; transactions referencing a deleted category fall back to
+// null (ON DELETE SET NULL) instead of being lost, and any category the user
+// actually created themselves is untouched since this only runs once, ever
+migrate("2026-09-category-taxonomy-en", () => {
+  db.exec("DELETE FROM categories");
+});
 
 const insertCategory = db.prepare(
   "INSERT OR IGNORE INTO categories (name, type, sort_order) VALUES (@name, @type, @sortOrder)",

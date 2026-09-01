@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS categories (
   UNIQUE (name, type)
 );
 
+-- one-time data migrations, tracked by name so each runs at most once
+CREATE TABLE IF NOT EXISTS _migrations (
+  name TEXT PRIMARY KEY,
+  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
