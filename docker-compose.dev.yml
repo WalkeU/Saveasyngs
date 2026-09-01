@@ -7,7 +7,7 @@ services:
       - PORT=3000
       - DB_PATH=/app/data/savings.db
     ports:
-      - "3000:3000"
+      - "${BACKEND_PORT}:3000"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -20,7 +20,7 @@ services:
     environment:
       - BACKEND_URL=http://backend:3000
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT}:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
