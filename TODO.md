@@ -6,18 +6,24 @@
 - [x] prod proxy: Caddy
 - [x] dev: Vite beépített proxy, nincs külön proxy konténer
 - [x] workflow: egy `dev` branch, nincs feature branch, `dev` → `master` release-enként
-- [ ] db-hozzáférés: nyers SQL vagy Kysely?
-- [ ] grafikon library a kimutatásokhoz (pl. Recharts)
-- [ ] migrációkezelés az SQLite sémához
-- [ ] prod port/hostname a Caddy előtt
+- [x] db-hozzáférés: nyers SQL (better-sqlite3 közvetlenül), nincs query builder
+- [x] grafikon library a kimutatásokhoz: Recharts
+- [ ] migrációkezelés az SQLite sémához (ma csak `CREATE TABLE IF NOT EXISTS`, nincs verziózott migráció)
+- [x] prod port/hostname a Caddy előtt — `.env`-ből (`HTTP_PORT`)
 - [x] git repo init, `dev` branch létrehozása
 - [x] mappastruktúra: `backend/`, `frontend/`, `docker/`
 - [x] backend alapváz (Fastify, health endpoint, SQLite kapcsolat)
 - [x] frontend alapváz (Vite + React, alap layout)
-- [x] első DB séma: expenses, categories, savings_goals, savings_contributions
+- [x] első DB séma: transactions, categories, category_rules, import_profiles, savings_goals, savings_contributions
 - [x] `docker-compose.dev.yml` — hot reload mindkét oldalon
 - [x] `docker-compose.prod.yml` — multi-stage build, Caddy
-- [ ] első feature: költés rögzítése + listázása
+- [x] tranzakciók rögzítése + listázása + szűrés (típus, kategória, leírás)
+- [x] CSV import — oszlop-mapping auto-detekcióval, formátum megjegyzéssel bank-onként
+- [x] duplikátum-védelem importnál (dátum+típus+összeg+leírás hash)
+- [x] kategória-szabályok (kézi + tanult, importáláskor alkalmazva)
+- [x] kimutatás: kategória szerinti bontás, bevétel/kiadás/egyenleg
+- [ ] savings célok UI (backend séma megvan, frontend oldal még nincs)
+- [ ] havi befizetések UI a savings célokhoz
 - [ ] export (CSV) a kimutatásokból
 - [ ] ismétlődő költések (pl. havi rezsi automatikus felvétele)
 - [ ] több megtakarítási cél párhuzamos követése grafikonon

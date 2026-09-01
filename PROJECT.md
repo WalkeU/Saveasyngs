@@ -12,11 +12,21 @@ van, semmi többet.
 
 ## Funkciók (v1 kör)
 
-- **Költések rögzítése** — összeg, dátum, leírás, kategória
-- **Kategorizálás** — saját kategóriák (pl. élelmiszer, rezsi, szórakozás),
-  egy költés egy kategóriához tartozik
-- **Kimutatások** — havi/időszaki bontás kategóriánként, összegzések,
-  egyszerű grafikonok (trend, megoszlás)
+- **Tranzakciók rögzítése** — összeg, dátum, leírás, kategória; kiadás és
+  bevétel külön kezelve (nem egy közös listában összemosva)
+- **CSV import** — bank-exportok behúzása (pl. Revolut), oszlop-mapping
+  auto-felismeréssel és bank-onkénti megjegyzéssel, összeg előjele dönti el
+  kiadás vagy bevétel; duplikátum-szűrés dátum+típus+összeg+leírás hash
+  alapján, így többszöri import nem hoz létre dupla tételeket
+- **Kategorizálás** — saját kategóriák (kiadás és bevétel külön névtérben),
+  alap kategóriákkal induló, teljesen szerkeszthető
+- **Szabályok / auto-kategorizálás** — ha egy leírás tartalmaz egy mintát,
+  importáláskor automatikusan rákerül a hozzá rendelt kategória; a
+  szabályok kézzel is felvehetők, és az app javasol újat, amikor a
+  felhasználó manuálisan kategorizál egy tételt (ezt jóvá kell hagyni,
+  nincs csendes automatikus szabály-létrehozás)
+- **Kimutatások** — időszak szerinti bontás kategóriánként, összegzések,
+  kategória-megoszlás grafikon
 - **Savings (megtakarítás) vezetése** — egy vagy több megtakarítási cél/
   számla, aktuális egyenleg követése
 - **Havi befizetések** — rendszeres befizetések rögzítése a savings
@@ -25,7 +35,8 @@ van, semmi többet.
 Ami **nem** kell (egyelőre):
 - Auth / user management — csak privát hálózatról érhető el
 - Multi-user support
-- Bankintegráció / automatikus tranzakció-import
+- Élő bankintegráció (API-n keresztüli automatikus szinkron) — csak
+  manuális CSV export/import
 
 ## Tech stack
 
@@ -34,6 +45,8 @@ Ami **nem** kell (egyelőre):
 | Backend    | Node.js + TypeScript + Fastify          | kis memóriaigény, gyors, type-safe |
 | DB         | SQLite (better-sqlite3)                 | egy fájl, nincs külön DB szerver, minimál erőforrás |
 | Frontend   | React + Vite + TypeScript               | komponens-alapú, jól illeszkedik a tervezett letisztult UI-hoz (kimutatások/grafikonok) |
+| Routing    | react-router-dom                        | oldalak közötti navigáció (Áttekintés, Tranzakciók, Import, Kategóriák, Szabályok) |
+| Grafikonok | Recharts                                | kategória-megoszlás kimutatáshoz |
 | Proxy      | Caddy (csak prod)                       | egyetlen belépési pont, statikus frontend + `/api` proxy, minimál config |
 | Konténer   | Docker, külön dev/prod compose stack    | mindkét környezet konténerizált, izolált adat |
 
