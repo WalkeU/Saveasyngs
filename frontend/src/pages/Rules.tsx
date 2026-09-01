@@ -90,7 +90,7 @@ export function Rules() {
                     </span>
                   </td>
                   <td>
-                    <button className="btn btn-sm btn-ghost" onClick={() => toggle(rule)}>
+                    <button className="btn btn-ghost" onClick={() => toggle(rule)}>
                       {rule.enabled ? "Bekapcsolva" : "Kikapcsolva"}
                     </button>
                   </td>

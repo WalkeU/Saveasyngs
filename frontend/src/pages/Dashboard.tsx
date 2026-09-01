@@ -53,7 +53,7 @@ export function Dashboard() {
             <label>Eddig</label>
             <input type="date" value={to} onChange={(e) => setRange({ from, to: e.target.value })} />
           </div>
-          <button className="btn btn-sm" onClick={() => setRange(monthBounds())}>
+          <button className="btn" onClick={() => setRange(monthBounds())}>
             Ez a hónap
           </button>
         </div>
@@ -70,13 +70,13 @@ export function Dashboard() {
           <h2 style={{ fontSize: 17 }}>Kategóriák szerint</h2>
           <div style={{ display: "flex", gap: 4 }}>
             <button
-              className={`btn btn-sm ${breakdownType === "expense" ? "btn-primary" : "btn-ghost"}`}
+              className={`btn ${breakdownType === "expense" ? "btn-primary" : "btn-ghost"}`}
               onClick={() => setBreakdownType("expense")}
             >
               Kiadás
             </button>
             <button
-              className={`btn btn-sm ${breakdownType === "income" ? "btn-primary" : "btn-ghost"}`}
+              className={`btn ${breakdownType === "income" ? "btn-primary" : "btn-ghost"}`}
               onClick={() => setBreakdownType("income")}
             >
               Bevétel

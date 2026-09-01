@@ -204,7 +204,7 @@ function CategoryGroup({
       </div>
       <form onSubmit={add} style={{ display: "flex", gap: 8 }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Új kategória neve" style={{ flex: 1 }} />
-        <button className="btn btn-sm btn-primary" type="submit">
+        <button className="btn btn-primary" type="submit">
           <IconPlus size={14} />
         </button>
       </form>

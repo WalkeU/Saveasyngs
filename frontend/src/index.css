@@ -178,12 +178,14 @@ a {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
+  height: 34px;
   border: 1px solid var(--hairline);
   background: var(--paper-raised);
   color: var(--ink);
   border-radius: var(--radius-sm);
-  padding: 8px 14px;
+  padding: 0 14px;
   font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
@@ -223,12 +225,9 @@ a {
   background: var(--expense-soft);
   border-color: var(--expense-soft);
 }
-.btn-sm {
-  padding: 5px 9px;
-  font-size: 12.5px;
-}
 .btn-icon {
-  padding: 7px;
+  width: 34px;
+  padding: 0;
 }
 
 .field {

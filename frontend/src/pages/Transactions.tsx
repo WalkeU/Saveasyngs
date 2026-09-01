@@ -100,10 +100,10 @@ export function Transactions() {
             → mindig{" "}
             <strong>{categories.find((c) => c.id === suggestion.categoryId)?.name}</strong>
           </span>
-          <button className="btn btn-sm btn-primary" onClick={confirmRule}>
+          <button className="btn btn-primary" onClick={confirmRule}>
             Létrehozás
           </button>
-          <button className="btn btn-sm btn-ghost" onClick={() => setSuggestion(null)}>
+          <button className="btn btn-ghost" onClick={() => setSuggestion(null)}>
             Mégse
           </button>
         </div>
@@ -135,7 +135,7 @@ export function Transactions() {
         </div>
         <button
           type="button"
-          className={`btn btn-sm ${categoryId === "none" ? "btn-primary" : ""}`}
+          className={`btn ${categoryId === "none" ? "btn-primary" : ""}`}
           onClick={() => setCategoryId(categoryId === "none" ? "" : "none")}
         >
           Kategorizálatlan
