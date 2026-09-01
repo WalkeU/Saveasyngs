@@ -8,7 +8,7 @@
 - [x] workflow: egy `dev` branch, nincs feature branch, `dev` → `master` release-enként
 - [x] db-hozzáférés: nyers SQL (better-sqlite3 közvetlenül), nincs query builder
 - [x] grafikon library a kimutatásokhoz: Recharts
-- [ ] migrációkezelés az SQLite sémához (ma csak `CREATE TABLE IF NOT EXISTS`, nincs verziózott migráció)
+- [x] migrációkezelés adat-migrációkhoz — `_migrations` tábla + `migrate()` helper, névvel azonosított, egyszer fut le adatbázisonként (a séma maga továbbra is csak `CREATE TABLE IF NOT EXISTS`)
 - [x] prod port/hostname a Caddy előtt — `.env`-ből (`HTTP_PORT`)
 - [x] git repo init, `dev` branch létrehozása
 - [x] mappastruktúra: `backend/`, `frontend/`, `docker/`
