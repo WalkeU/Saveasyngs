@@ -101,6 +101,15 @@ export function IconLanguage({ size = 16 }: IconProps) {
   );
 }
 
+export function IconReset({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4 12a8 8 0 1 1 2.6 5.9" />
+      <path d="M4 20v-5.5h5.5" />
+    </svg>
+  );
+}
+
 export function IconTrash({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>

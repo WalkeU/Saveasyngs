@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { IconChevronDown, IconChevronUp, IconLanguage, IconPlus, IconTrash } from "../icons";
+import { IconChevronDown, IconChevronUp, IconLanguage, IconPlus, IconReset, IconTrash } from "../icons";
 import type { Category, TransactionType } from "../types";
 
 const EN_TRANSLATIONS: Record<string, string> = {
@@ -57,6 +57,15 @@ export function Categories() {
     await Promise.all(renames);
   }
 
+  async function resetToDefaults() {
+    const ok = window.confirm(
+      "Ez törli az összes kategóriát (a sajátjaidat is), és visszaállítja az alap listát. A tranzakciók megmaradnak, csak kategória nélkül. Biztosan folytatod?",
+    );
+    if (!ok) return;
+    const reset = await api.categories.reset();
+    setCategories(reset);
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -64,9 +73,14 @@ export function Categories() {
           <h1>Kategóriák</h1>
           <div className="page-sub">Kiadás és bevétel kategóriák kezelése</div>
         </div>
-        <button className="btn" onClick={translateToEnglish}>
-          <IconLanguage /> Angolra fordítás
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn" onClick={translateToEnglish}>
+            <IconLanguage /> Angolra fordítás
+          </button>
+          <button className="btn btn-danger" onClick={resetToDefaults}>
+            <IconReset /> Alaphelyzet
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>

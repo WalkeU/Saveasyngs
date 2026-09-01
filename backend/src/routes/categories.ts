@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
+import { defaultCategories } from "../default-categories.js";
 import type { Category, TransactionType } from "../types.js";
 
 interface CreateCategoryBody {
@@ -107,5 +108,25 @@ export async function categoryRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>("/api/categories/:id", async (req, reply) => {
     db.prepare("DELETE FROM categories WHERE id = ?").run(Number(req.params.id));
     return reply.code(204).send();
+  });
+
+  // wipes every category (custom ones included) and reseeds the fixed
+  // default taxonomy; transactions keep their data, category_id falls back
+  // to null (ON DELETE SET NULL), and any rules pointing at a removed
+  // category are cascade-deleted with it
+  app.post("/api/categories/reset", async () => {
+    const insertCategory = db.prepare(
+      "INSERT INTO categories (name, type, sort_order) VALUES (@name, @type, @sortOrder)",
+    );
+    const reset = db.transaction(() => {
+      db.exec("DELETE FROM categories");
+      const nextOrder: Record<string, number> = { expense: 0, income: 0 };
+      for (const category of defaultCategories) {
+        const sortOrder = nextOrder[category.type]++;
+        insertCategory.run({ ...category, sortOrder });
+      }
+    });
+    reset();
+    return db.prepare("SELECT * FROM categories ORDER BY type, sort_order, name").all() as Category[];
   });
 }

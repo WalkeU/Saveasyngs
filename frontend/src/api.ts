@@ -38,6 +38,7 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ direction }),
       }),
+    reset: () => request<Category[]>("/api/categories/reset", { method: "POST" }),
   },
   transactions: {
     list: (params: Record<string, string | undefined>) => {
