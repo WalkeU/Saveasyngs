@@ -3,6 +3,7 @@ import type {
   CategoryRule,
   ImportPreview,
   ImportResult,
+  LegacyImportResult,
   ReportByCategory,
   ReportSummary,
   Transaction,
@@ -109,5 +110,16 @@ export const api = {
       if (options.profileName) form.append("profileName", options.profileName);
       return request<ImportResult>("/api/import/commit", { method: "POST", body: form });
     },
+    legacyCategorize: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return request<LegacyImportResult>("/api/import/legacy-categorize", {
+        method: "POST",
+        body: form,
+      });
+    },
+  },
+  config: {
+    get: () => request<{ legacyCategoryImport: boolean }>("/api/config"),
   },
 };

@@ -1,10 +1,15 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { IconUpload } from "../icons";
 import { formatMoney } from "../format";
-import type { ImportPreview, ImportResult } from "../types";
+import type { ImportPreview, ImportResult, LegacyImportResult } from "../types";
 
 export function Import() {
+  const [legacyEnabled, setLegacyEnabled] = useState(false);
+  useEffect(() => {
+    api.config.get().then((c) => setLegacyEnabled(c.legacyCategoryImport));
+  }, []);
+
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [dateColumn, setDateColumn] = useState("");
@@ -242,6 +247,73 @@ export function Import() {
           <button className="btn btn-primary" onClick={reset} style={{ marginTop: 16 }}>
             Új import
           </button>
+        </div>
+      )}
+
+      {legacyEnabled && <LegacyCategorize />}
+    </div>
+  );
+}
+
+function LegacyCategorize() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<LegacyImportResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function run(f: File) {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      setResult(await api.import.legacyCategorize(f));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "A kategorizálás nem sikerült");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 16, marginBottom: 4 }}>Legacy kategorizálás</h2>
+          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+            Egy korábbi (All-Accounts.csv formátumú) kategorizált export kategóriáit rárakja a már
+            importált, még kategorizálatlan tranzakciókra — dátum, típus és összeg egyezés alapján.
+            Sosem ír felül meglévő kategóriát.
+          </div>
+        </div>
+        <button className="btn" onClick={() => inputRef.current?.click()} disabled={loading}>
+          <IconUpload size={14} /> {loading ? "Fut…" : "Fájl kiválasztása"}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,text/csv"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) run(f);
+          }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 14, color: "var(--expense)", fontSize: 13.5 }}>{error}</div>
+      )}
+
+      {result && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginTop: 18 }}>
+          <ResultStat label="Sor összesen" value={result.total} />
+          <ResultStat label="Alkalmazva" value={result.applied} tone="income" />
+          <ResultStat label="Már kategorizálva" value={result.alreadyCategorized} tone="muted" />
+          <ResultStat label="Nincs egyező tétel" value={result.noTransactionMatch} tone="muted" />
+          <ResultStat label="Kétértelmű" value={result.ambiguousMatch} tone="expense" />
+          <ResultStat label="Nincs ilyen kategória" value={result.noCategoryMatch} tone="expense" />
+          <ResultStat label="Üres kategória" value={result.emptyCategory} tone="muted" />
+          <ResultStat label="Érvénytelen sor" value={result.invalidRow} tone="expense" />
         </div>
       )}
     </div>

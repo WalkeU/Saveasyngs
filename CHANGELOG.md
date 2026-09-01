@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- added a "Legacy kategorizálás" section on the Import page, shown only when ENABLE_LEGACY_CATEGORY_IMPORT is on (GET /api/config exposes the flag), so the backfill feature has a UI trigger instead of curl-only
+
 - unified typography: dropped the Fraunces display serif, headings now use the same IBM Plex Sans as body text
 
 - unified all button sizes across the app (removed the smaller .btn-sm variant, fixed height for both text and icon buttons)

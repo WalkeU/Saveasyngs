@@ -68,3 +68,14 @@ export interface ImportResult {
   duplicateRows: { date: string; description: string; amount: number; type: TransactionType }[];
   skippedRows: { date: string; description: string; amount: string; reason: string }[];
 }
+
+export interface LegacyImportResult {
+  total: number;
+  applied: number;
+  alreadyCategorized: number;
+  noTransactionMatch: number;
+  ambiguousMatch: number;
+  noCategoryMatch: number;
+  emptyCategory: number;
+  invalidRow: number;
+}
