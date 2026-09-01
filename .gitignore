@@ -9,3 +9,6 @@ data/
 *.sqlite
 *.sqlite3
 .DS_Store
+
+# personal finance exports — never commit real transaction data
+*.csv

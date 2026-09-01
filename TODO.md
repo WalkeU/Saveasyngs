@@ -15,8 +15,8 @@
 - [x] backend alapváz (Fastify, health endpoint, SQLite kapcsolat)
 - [x] frontend alapváz (Vite + React, alap layout)
 - [x] első DB séma: expenses, categories, savings_goals, savings_contributions
-- [ ] `docker-compose.dev.yml` — hot reload mindkét oldalon
-- [ ] `docker-compose.prod.yml` — multi-stage build, Caddy
+- [x] `docker-compose.dev.yml` — hot reload mindkét oldalon
+- [x] `docker-compose.prod.yml` — multi-stage build, Caddy
 - [ ] első feature: költés rögzítése + listázása
 - [ ] export (CSV) a kimutatásokból
 - [ ] ismétlődő költések (pl. havi rezsi automatikus felvétele)

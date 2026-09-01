@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/savings.db
+    volumes:
+      - backend-prod-data:/app/data
+    restart: unless-stopped
+
+  caddy:
+    build:
+      context: .
+      dockerfile: docker/prod/caddy.Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-prod-data:

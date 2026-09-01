@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/savings.db
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      - BACKEND_URL=http://backend:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
