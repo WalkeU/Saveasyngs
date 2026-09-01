@@ -6,6 +6,7 @@ import { ruleRoutes } from "./routes/rules.js";
 import { transactionRoutes } from "./routes/transactions.js";
 import { importRoutes } from "./routes/import.js";
 import { reportRoutes } from "./routes/reports.js";
+import { legacyImportRoutes } from "./routes/legacy-import.js";
 
 const app = Fastify({ logger: true });
 
@@ -17,6 +18,12 @@ await app.register(ruleRoutes);
 await app.register(transactionRoutes);
 await app.register(importRoutes);
 await app.register(reportRoutes);
+
+// off by default: a one-off backfill tool for a specific legacy export,
+// not part of the normal product surface
+if (process.env.ENABLE_LEGACY_CATEGORY_IMPORT === "true") {
+  await app.register(legacyImportRoutes);
+}
 
 const port = Number(process.env.PORT ?? 3000);
 await app.listen({ port, host: "0.0.0.0" });

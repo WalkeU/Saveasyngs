@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- added an opt-in legacy category backfill (POST /api/import/legacy-categorize, behind ENABLE_LEGACY_CATEGORY_IMPORT, off by default) that applies categories from an All-Accounts.csv-shaped export onto matching, still-uncategorized transactions
 - transaction delete now asks for confirmation before removing
 
 - added an "Automatikus színezés" button on Kategóriák that assigns every category a color from the fixed palette in one click
