@@ -70,6 +70,12 @@ export interface MonthlyComparison {
   categories: MonthlyComparisonCategory[];
 }
 
+export interface MonthlyByCategory {
+  months: string[];
+  categories: { category_id: number | null; name: string; color: string | null }[];
+  data: Record<string, number | string>[];
+}
+
 export interface ImportPreview {
   headers: string[];
   sampleRows: Record<string, string>[];

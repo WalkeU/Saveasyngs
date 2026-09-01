@@ -1,10 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { api } from "../api";
 import { categoryColor, formatMoney, toLocalDateInput } from "../format";
 import { CategoryIcon } from "../IconPicker";
 import { IconChevronLeft, IconChevronRight } from "../icons";
-import type { MonthlyComparison, ReportByCategory, ReportSummary, TransactionType } from "../types";
+import type {
+  MonthlyByCategory,
+  MonthlyComparison,
+  ReportByCategory,
+  ReportSummary,
+  TransactionType,
+} from "../types";
+
+const tooltipStyle = {
+  background: "var(--paper-raised)",
+  border: "1px solid var(--hairline)",
+  borderRadius: 8,
+  fontSize: 13,
+};
 
 function monthBounds(offset = 0) {
   const now = new Date();
@@ -37,7 +62,20 @@ export function Dashboard() {
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [breakdownType, setBreakdownType] = useState<TransactionType>("expense");
   const [breakdown, setBreakdown] = useState<ReportByCategory[]>([]);
+  const [chartKind, setChartKind] = useState<"pie" | "bar">("pie");
   const [loading, setLoading] = useState(true);
+
+  const [trendType, setTrendType] = useState<TransactionType>("expense");
+  const [trend, setTrend] = useState<MonthlyByCategory | null>(null);
+  const [trendLoading, setTrendLoading] = useState(true);
+
+  useEffect(() => {
+    setTrendLoading(true);
+    api.reports
+      .monthlyByCategory({ type: trendType, months: 6 })
+      .then(setTrend)
+      .finally(() => setTrendLoading(false));
+  }, [trendType]);
 
   useEffect(() => {
     setLoading(true);
@@ -100,19 +138,37 @@ export function Dashboard() {
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <h2 style={{ fontSize: 17 }}>Kategóriák szerint</h2>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button
-              className={`btn ${breakdownType === "expense" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setBreakdownType("expense")}
-            >
-              Kiadás
-            </button>
-            <button
-              className={`btn ${breakdownType === "income" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setBreakdownType("income")}
-            >
-              Bevétel
-            </button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className={`btn ${chartKind === "pie" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setChartKind("pie")}
+                title="Kör diagram"
+              >
+                Kör
+              </button>
+              <button
+                className={`btn ${chartKind === "bar" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setChartKind("bar")}
+                title="Oszlopdiagram"
+              >
+                Oszlop
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className={`btn ${breakdownType === "expense" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setBreakdownType("expense")}
+              >
+                Kiadás
+              </button>
+              <button
+                className={`btn ${breakdownType === "income" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setBreakdownType("income")}
+              >
+                Bevétel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -122,33 +178,46 @@ export function Dashboard() {
 
         {breakdown.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "center" }}>
-            <div style={{ height: 220 }}>
+            <div style={{ height: 220, width: 220, minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={breakdown}
-                    dataKey="total"
-                    nameKey="category_name"
-                    innerRadius={58}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    stroke="var(--paper-raised)"
-                    strokeWidth={2}
+                {chartKind === "pie" ? (
+                  <PieChart key={`pie-${breakdownType}`}>
+                    <Pie
+                      data={breakdown}
+                      dataKey="total"
+                      nameKey="category_name"
+                      innerRadius={58}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      stroke="var(--paper-raised)"
+                      strokeWidth={2}
+                    >
+                      {breakdown.map((row) => (
+                        <Cell key={row.category_id ?? "none"} fill={categoryColor(row.category_id, row.category_color)} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatMoney(Number(value) || 0)} contentStyle={tooltipStyle} />
+                  </PieChart>
+                ) : (
+                  <BarChart
+                    key={`bar-${breakdownType}`}
+                    data={[Object.fromEntries(breakdown.map((row) => [row.category_name, row.total]))]}
+                    margin={{ left: 0, right: 0, top: 8 }}
                   >
+                    <XAxis hide dataKey={() => "x"} />
+                    <YAxis hide />
+                    <Tooltip formatter={(value) => formatMoney(Number(value) || 0)} contentStyle={tooltipStyle} />
                     {breakdown.map((row) => (
-                      <Cell key={row.category_id ?? "none"} fill={categoryColor(row.category_id, row.category_color)} />
+                      <Bar
+                        key={row.category_id ?? "none"}
+                        dataKey={row.category_name}
+                        name={row.category_name}
+                        fill={categoryColor(row.category_id, row.category_color)}
+                        radius={[4, 4, 0, 0]}
+                      />
                     ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => formatMoney(Number(value) || 0)}
-                    contentStyle={{
-                      background: "var(--paper-raised)",
-                      border: "1px solid var(--hairline)",
-                      borderRadius: 8,
-                      fontSize: 13,
-                    }}
-                  />
-                </PieChart>
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </div>
 
@@ -259,8 +328,77 @@ export function Dashboard() {
           </table>
         )}
       </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h2 style={{ fontSize: 17 }}>Kategóriák havonta</h2>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button
+              className={`btn ${trendType === "expense" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setTrendType("expense")}
+            >
+              Kiadás
+            </button>
+            <button
+              className={`btn ${trendType === "income" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setTrendType("income")}
+            >
+              Bevétel
+            </button>
+          </div>
+        </div>
+
+        {!trendLoading && trend && trend.months.length === 0 && (
+          <div className="empty-state">Nincs elég adat a trendhez.</div>
+        )}
+
+        {trend && trend.months.length > 0 && (
+          <div style={{ height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend.data} margin={{ left: 0, right: 8, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--hairline)" />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={formatMonthShort}
+                  tick={{ fontSize: 12, fill: "var(--ink-soft)" }}
+                  axisLine={{ stroke: "var(--hairline)" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "var(--ink-faint)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={56}
+                  tickFormatter={(v) => formatMoney(Number(v))}
+                />
+                <Tooltip
+                  formatter={(value) => formatMoney(Number(value) || 0)}
+                  labelFormatter={(label) => formatMonthLabel(String(label))}
+                  contentStyle={tooltipStyle}
+                />
+                <Legend wrapperStyle={{ fontSize: 12.5 }} />
+                {trend.categories.map((cat) => (
+                  <Bar
+                    key={cat.category_id ?? "none"}
+                    dataKey={cat.name}
+                    name={cat.name}
+                    stackId="a"
+                    fill={categoryColor(cat.category_id, cat.color)}
+                    radius={[0, 0, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function formatMonthShort(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(new Date(y, m - 1, 1));
 }
 
 function StatCard({ label, value, tone }: { label: string; value: number; tone: "income" | "expense" }) {

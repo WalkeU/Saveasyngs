@@ -143,4 +143,59 @@ export async function reportRoutes(app: FastifyInstance) {
       return { month, previousMonth, monthCount, categories };
     },
   );
+
+  app.get<{ Querystring: { type?: TransactionType; months?: string } }>(
+    "/api/reports/monthly-by-category",
+    async (req) => {
+      const type: TransactionType = req.query.type === "income" ? "income" : "expense";
+      const months = Math.min(Math.max(Number(req.query.months ?? 6) || 6, 1), 24);
+
+      const rows = db
+        .prepare(
+          `SELECT
+             strftime('%Y-%m', date) AS month,
+             categories.id AS category_id,
+             COALESCE(categories.name, 'Kategorizálatlan') AS category_name,
+             categories.color AS category_color,
+             SUM(transactions.amount) AS total
+           FROM transactions
+           LEFT JOIN categories ON categories.id = transactions.category_id
+           WHERE transactions.type = ?
+           GROUP BY month, categories.id
+           ORDER BY month`,
+        )
+        .all(type) as {
+        month: string;
+        category_id: number | null;
+        category_name: string;
+        category_color: string | null;
+        total: number;
+      }[];
+
+      const allMonths = [...new Set(rows.map((r) => r.month))].sort();
+      const keepMonths = allMonths.slice(-months);
+      const keepSet = new Set(keepMonths);
+      const filtered = rows.filter((r) => keepSet.has(r.month));
+
+      const categoryOrder = new Map<string, { category_id: number | null; name: string; color: string | null }>();
+      for (const r of filtered) {
+        const key = String(r.category_id);
+        if (!categoryOrder.has(key)) {
+          categoryOrder.set(key, { category_id: r.category_id, name: r.category_name, color: r.category_color });
+        }
+      }
+      const categories = [...categoryOrder.values()];
+
+      const data = keepMonths.map((month) => {
+        const entry: Record<string, number | string> = { month };
+        for (const cat of categories) entry[cat.name] = 0;
+        for (const r of filtered) {
+          if (r.month === month) entry[r.category_name] = r.total;
+        }
+        return entry;
+      });
+
+      return { months: keepMonths, categories, data };
+    },
+  );
 }

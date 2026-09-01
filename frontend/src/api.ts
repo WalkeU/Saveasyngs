@@ -4,6 +4,7 @@ import type {
   ImportPreview,
   ImportResult,
   LegacyImportResult,
+  MonthlyByCategory,
   MonthlyComparison,
   ReportByCategory,
   ReportSummary,
@@ -92,6 +93,13 @@ export const api = {
     },
     monthlyComparison: (month?: string) =>
       request<MonthlyComparison>(`/api/reports/monthly-comparison${month ? `?month=${month}` : ""}`),
+    monthlyByCategory: (params: { type?: TransactionType; months?: number }) => {
+      const entries: [string, string][] = [];
+      if (params.type) entries.push(["type", params.type]);
+      if (params.months !== undefined) entries.push(["months", String(params.months)]);
+      const query = new URLSearchParams(entries).toString();
+      return request<MonthlyByCategory>(`/api/reports/monthly-by-category${query ? `?${query}` : ""}`);
+    },
   },
   import: {
     preview: (file: File) => {
