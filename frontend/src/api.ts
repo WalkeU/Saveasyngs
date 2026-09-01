@@ -4,8 +4,12 @@ import type {
   ImportPreview,
   ImportResult,
   LegacyImportResult,
+  MissingRecurring,
   MonthlyByCategory,
   MonthlyComparison,
+  NetWorth,
+  NetWorthOpening,
+  RecurringPayment,
   ReportByCategory,
   ReportSummary,
   Transaction,
@@ -62,7 +66,13 @@ export const api = {
     }) => request<Transaction>("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
     update: (
       id: number,
-      data: Partial<{ amount: number; description: string; categoryId: number | null; date: string }>,
+      data: Partial<{
+        type: TransactionType;
+        amount: number;
+        description: string;
+        categoryId: number | null;
+        date: string;
+      }>,
     ) =>
       request<Transaction>(`/api/transactions/${id}`, {
         method: "PATCH",
@@ -132,5 +142,41 @@ export const api = {
   },
   config: {
     get: () => request<{ legacyCategoryImport: boolean }>("/api/config"),
+  },
+  networth: {
+    get: () => request<NetWorth>("/api/networth"),
+    setOpening: (openingLiquid: number, openingDate?: string) =>
+      request<NetWorthOpening>("/api/networth/opening", {
+        method: "POST",
+        body: JSON.stringify({ openingLiquid, openingDate }),
+      }),
+  },
+  recurring: {
+    list: () => request<RecurringPayment[]>("/api/recurring"),
+    missing: (month?: string) =>
+      request<MissingRecurring>(`/api/recurring/missing${month ? `?month=${month}` : ""}`),
+    create: (data: {
+      type: TransactionType;
+      amount: number;
+      description?: string;
+      categoryId?: number | null;
+      dayOfMonth: number;
+    }) => request<RecurringPayment>("/api/recurring", { method: "POST", body: JSON.stringify(data) }),
+    update: (
+      id: number,
+      data: Partial<{
+        type: TransactionType;
+        amount: number;
+        description: string;
+        categoryId: number | null;
+        dayOfMonth: number;
+        enabled: boolean;
+      }>,
+    ) =>
+      request<RecurringPayment>(`/api/recurring/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    remove: (id: number) => request<void>(`/api/recurring/${id}`, { method: "DELETE" }),
   },
 };

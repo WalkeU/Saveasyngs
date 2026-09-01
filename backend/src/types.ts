@@ -1,4 +1,4 @@
-export type TransactionType = "expense" | "income";
+export type TransactionType = "expense" | "income" | "savings";
 
 export interface Category {
   id: number;
@@ -39,4 +39,21 @@ export interface ImportProfile {
   description_column: string;
   amount_column: string;
   created_at: string;
+}
+
+export interface RecurringPayment {
+  id: number;
+  type: TransactionType;
+  amount: number;
+  description: string;
+  category_id: number | null;
+  day_of_month: number;
+  enabled: 0 | 1;
+  created_at: string;
+}
+
+export interface NetWorthOpening {
+  id: 1;
+  opening_liquid: number;
+  opening_date: string;
 }

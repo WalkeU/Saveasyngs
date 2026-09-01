@@ -13,7 +13,14 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api";
-import { categoryColor, formatMoney, toLocalDateInput } from "../format";
+import {
+  categoryColor,
+  formatMoney,
+  formatMonthLabel,
+  monthKey,
+  shiftMonthKey,
+  toLocalDateInput,
+} from "../format";
 import { CategoryIcon } from "../IconPicker";
 import { IconChevronLeft, IconChevronRight } from "../icons";
 import type {
@@ -38,27 +45,15 @@ function monthBounds(offset = 0) {
   return { from: toLocalDateInput(start), to: toLocalDateInput(end) };
 }
 
-function monthKey(offset = 0) {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function shiftMonthKey(month: string, delta: number) {
-  const [y, m] = month.split("-").map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function formatMonthLabel(month: string) {
-  const [y, m] = month.split("-").map(Number);
-  return new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "long" }).format(
-    new Date(y, m - 1, 1),
-  );
-}
 
 export function Dashboard() {
+  const [monthOffset, setMonthOffset] = useState(0);
   const [{ from, to }, setRange] = useState(monthBounds());
+
+  function goToMonth(offset: number) {
+    setMonthOffset(offset);
+    setRange(monthBounds(offset));
+  }
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [breakdownType, setBreakdownType] = useState<TransactionType>("expense");
   const [breakdown, setBreakdown] = useState<ReportByCategory[]>([]);
@@ -123,9 +118,27 @@ export function Dashboard() {
             <label>Eddig</label>
             <input type="date" value={to} onChange={(e) => setRange({ from, to: e.target.value })} />
           </div>
-          <button className="btn" onClick={() => setRange(monthBounds())}>
-            Ez a hónap
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button className="btn btn-icon btn-ghost" onClick={() => goToMonth(monthOffset - 1)} title="Előző hónap">
+              <IconChevronLeft />
+            </button>
+            <button
+              className="btn"
+              onClick={() => goToMonth(0)}
+              style={{ minWidth: 130, textTransform: "capitalize" }}
+              title="Ugrás a mai hónapra"
+            >
+              {formatMonthLabel(monthKey(monthOffset))}
+            </button>
+            <button
+              className="btn btn-icon btn-ghost"
+              onClick={() => goToMonth(monthOffset + 1)}
+              title="Következő hónap"
+              disabled={monthOffset >= 0}
+            >
+              <IconChevronRight />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -355,7 +368,7 @@ export function Dashboard() {
         {trend && trend.months.length > 0 && (
           <div style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend.data} margin={{ left: 0, right: 8, top: 8 }}>
+              <BarChart data={trend.data} margin={{ left: 8, right: 8, top: 8 }}>
                 <CartesianGrid vertical={false} stroke="var(--hairline)" />
                 <XAxis
                   dataKey="month"
@@ -368,7 +381,7 @@ export function Dashboard() {
                   tick={{ fontSize: 11, fill: "var(--ink-faint)" }}
                   axisLine={false}
                   tickLine={false}
-                  width={56}
+                  width={84}
                   tickFormatter={(v) => formatMoney(Number(v))}
                 />
                 <Tooltip

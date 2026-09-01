@@ -21,6 +21,7 @@ interface CreateBody {
 }
 
 interface UpdateBody {
+  type?: TransactionType;
   amount?: number;
   description?: string;
   categoryId?: number | null;
@@ -81,7 +82,7 @@ export async function transactionRoutes(app: FastifyInstance) {
 
   app.post<{ Body: CreateBody }>("/api/transactions", async (req, reply) => {
     const { type, amount, description, categoryId, date } = req.body;
-    if ((type !== "expense" && type !== "income") || !amount || amount <= 0 || !date) {
+    if ((type !== "expense" && type !== "income" && type !== "savings") || !amount || amount <= 0 || !date) {
       return reply.code(400).send({ error: "type, positive amount and date are required" });
     }
     const result = db
@@ -105,6 +106,7 @@ export async function transactionRoutes(app: FastifyInstance) {
         | undefined;
       if (!existing) return reply.code(404).send({ error: "not found" });
 
+      const type = req.body.type ?? existing.type;
       const amount = req.body.amount ?? existing.amount;
       const description = req.body.description?.trim() ?? existing.description;
       const categoryId =
@@ -112,8 +114,8 @@ export async function transactionRoutes(app: FastifyInstance) {
       const date = req.body.date ?? existing.date;
 
       db.prepare(
-        "UPDATE transactions SET amount = ?, description = ?, category_id = ?, date = ? WHERE id = ?",
-      ).run(amount, description, categoryId, date, id);
+        "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, date = ? WHERE id = ?",
+      ).run(type, amount, description, categoryId, date, id);
       return db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as Transaction;
     },
   );

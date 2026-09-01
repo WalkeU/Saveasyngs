@@ -14,7 +14,7 @@
 - [x] mappastruktúra: `backend/`, `frontend/`, `docker/`
 - [x] backend alapváz (Fastify, health endpoint, SQLite kapcsolat)
 - [x] frontend alapváz (Vite + React, alap layout)
-- [x] első DB séma: transactions, categories, category_rules, import_profiles, savings_goals, savings_contributions
+- [x] első DB séma: transactions, categories, category_rules, import_profiles (savings_goals/savings_contributions később lecserélve a savings-típusú kategória + net worth modellre)
 - [x] `docker-compose.dev.yml` — hot reload mindkét oldalon
 - [x] `docker-compose.prod.yml` — multi-stage build, Caddy
 - [x] tranzakciók rögzítése + listázása + szűrés (típus, kategória, leírás)
@@ -22,8 +22,7 @@
 - [x] duplikátum-védelem importnál (dátum+típus+összeg+leírás hash)
 - [x] kategória-szabályok (kézi + tanult, importáláskor alkalmazva)
 - [x] kimutatás: kategória szerinti bontás, bevétel/kiadás/egyenleg
-- [ ] savings célok UI (backend séma megvan, frontend oldal még nincs)
-- [ ] havi befizetések UI a savings célokhoz
+- [x] net worth / megtakarítás követés — nyitó egyenleg, savings-típusú kategóriák (buckets), tranzakció átkategorizálható megtakarításnak, Megtakarítás oldal
+- [x] ismétlődő fizetések (kézi felvitel + tranzakcióból kiválasztva) + "mi hiányzik ebben a hónapban" oldal, "rögzítés most" gombbal
 - [ ] export (CSV) a kimutatásokból
-- [ ] ismétlődő költések (pl. havi rezsi automatikus felvétele)
-- [ ] több megtakarítási cél párhuzamos követése grafikonon
+- [ ] nyitó egyenleg megtakarítási bucketenkénti kezdő összetétele (jelenleg csak a liquid nyitó egyenleg állítható)

@@ -5,6 +5,25 @@ export function toLocalDateInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function monthKey(offset = 0): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function shiftMonthKey(month: string, delta: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function formatMonthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "long" }).format(
+    new Date(y, m - 1, 1),
+  );
+}
+
 const money = new Intl.NumberFormat("hu-HU", {
   style: "currency",
   currency: "HUF",

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
   color TEXT,
   icon TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0,
@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS _migrations (
 
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
+  -- 'savings' = money moved from liquid cash into a savings/investment
+  -- bucket (a type='savings' category) rather than actually spent
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
   amount REAL NOT NULL CHECK (amount > 0),
   description TEXT NOT NULL DEFAULT '',
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
@@ -59,20 +61,27 @@ CREATE TABLE IF NOT EXISTS import_profiles (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS savings_goals (
+-- single-row settings: the liquid cash balance and date you started
+-- tracking from. Net worth = opening_liquid + all income - all expense
+-- (savings-type transactions just shift money between liquid and a
+-- bucket, so they net out of the total; see /api/networth)
+CREATE TABLE IF NOT EXISTS net_worth_opening (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  opening_liquid REAL NOT NULL DEFAULT 0,
+  opening_date TEXT NOT NULL DEFAULT (date('now'))
+);
+
+-- a bill/subscription/transfer you expect every month; used to flag
+-- what hasn't shown up yet this month (see /api/recurring/missing)
+CREATE TABLE IF NOT EXISTS recurring_payments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  target_amount REAL,
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+  amount REAL NOT NULL CHECK (amount > 0),
+  description TEXT NOT NULL DEFAULT '',
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  day_of_month INTEGER NOT NULL CHECK (day_of_month BETWEEN 1 AND 31),
+  enabled INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS savings_contributions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  goal_id INTEGER NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
-  amount REAL NOT NULL,
-  date TEXT NOT NULL,
-  note TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_contributions_goal ON savings_contributions(goal_id);
+CREATE INDEX IF NOT EXISTS idx_recurring_category ON recurring_payments(category_id);

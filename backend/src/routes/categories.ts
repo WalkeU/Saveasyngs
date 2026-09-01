@@ -36,7 +36,7 @@ export async function categoryRoutes(app: FastifyInstance) {
 
   app.post<{ Body: CreateCategoryBody }>("/api/categories", async (req, reply) => {
     const { name, type, color, icon } = req.body;
-    if (!name?.trim() || (type !== "expense" && type !== "income")) {
+    if (!name?.trim() || (type !== "expense" && type !== "income" && type !== "savings")) {
       return reply.code(400).send({ error: "name and a valid type are required" });
     }
     try {

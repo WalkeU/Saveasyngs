@@ -53,6 +53,24 @@ export function Transactions() {
     }
   }
 
+  async function handleCategorySelect(transaction: Transaction, value: string) {
+    if (value === "__revert__") {
+      const updated = await api.transactions.update(transaction.id, {
+        type: "expense",
+        categoryId: null,
+      });
+      setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
+      return;
+    }
+    if (value.startsWith("savings:")) {
+      const categoryId = Number(value.slice("savings:".length));
+      const updated = await api.transactions.update(transaction.id, { type: "savings", categoryId });
+      setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
+      return;
+    }
+    await handleCategoryChange(transaction, value);
+  }
+
   async function confirmRule() {
     if (!suggestion) return;
     await api.rules.create({ pattern: suggestion.pattern, categoryId: suggestion.categoryId, source: "learned" });
@@ -116,6 +134,7 @@ export function Transactions() {
             <option value="">Mind</option>
             <option value="expense">Kiadás</option>
             <option value="income">Bevétel</option>
+            <option value="savings">Megtakarítás</option>
           </select>
         </div>
         <div className="field">
@@ -164,7 +183,7 @@ export function Transactions() {
                   <td>
                     <select
                       value={row.category_id ?? ""}
-                      onChange={(e) => handleCategoryChange(row, e.target.value)}
+                      onChange={(e) => handleCategorySelect(row, e.target.value)}
                       style={{ fontSize: 12.5, padding: "4px 8px" }}
                     >
                       <option value="">Nincs kategória</option>
@@ -175,10 +194,24 @@ export function Transactions() {
                             {c.name}
                           </option>
                         ))}
+                      {row.type !== "savings" && categories.some((c) => c.type === "savings") && (
+                        <optgroup label="Megtakarításnak jelölés">
+                          {categories
+                            .filter((c) => c.type === "savings")
+                            .map((c) => (
+                              <option key={`s-${c.id}`} value={`savings:${c.id}`}>
+                                {c.name}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                      {row.type === "savings" && (
+                        <option value="__revert__">« vissza kiadásnak</option>
+                      )}
                     </select>
                   </td>
                   <td className={`tabular amount-${row.type}`} style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                    {row.type === "expense" ? "−" : "+"}
+                    {row.type === "expense" ? "−" : row.type === "income" ? "+" : "⇄"}
                     {formatMoney(row.amount)}
                   </td>
                   <td>
@@ -237,6 +270,7 @@ function AddForm({
         <select value={type} onChange={(e) => setType(e.target.value as TransactionType)}>
           <option value="expense">Kiadás</option>
           <option value="income">Bevétel</option>
+          <option value="savings">Megtakarítás</option>
         </select>
       </div>
       <div className="field">

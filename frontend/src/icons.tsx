@@ -126,6 +126,29 @@ export function IconReset({ size = 16 }: IconProps) {
   );
 }
 
+export function IconPiggyBank({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4.5 12.5c0-3.6 3.4-6.5 7.6-6.5 2.7 0 5 .9 6.4 2.3h1.3a1 1 0 0 1 1 1v2.3a1 1 0 0 1-1 1h-.9" />
+      <path d="M19.8 12.6c-.5 3.2-3.7 5.6-7.7 5.6-1 0-1.9-.1-2.8-.4L7.5 19.5H5l.9-2.6c-.9-.8-1.4-1.8-1.4-2.9" />
+      <path d="M9 6.2 8 4" />
+      <path d="M13.5 6.2 14.2 4" />
+      <circle cx="15.2" cy="10.7" r=".8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconRepeat({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4 12a7 7 0 0 1 12-4.9L18 9" />
+      <path d="M18 5v4h-4" />
+      <path d="M20 12a7 7 0 0 1-12 4.9L6 15" />
+      <path d="M6 19v-4h4" />
+    </svg>
+  );
+}
+
 export function IconPalette({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>

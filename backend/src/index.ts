@@ -8,6 +8,8 @@ import { importRoutes } from "./routes/import.js";
 import { reportRoutes } from "./routes/reports.js";
 import { legacyImportRoutes } from "./routes/legacy-import.js";
 import { configRoutes } from "./routes/config.js";
+import { networthRoutes } from "./routes/networth.js";
+import { recurringRoutes } from "./routes/recurring.js";
 
 const app = Fastify({ logger: true });
 
@@ -20,6 +22,8 @@ await app.register(transactionRoutes);
 await app.register(importRoutes);
 await app.register(reportRoutes);
 await app.register(configRoutes);
+await app.register(networthRoutes);
+await app.register(recurringRoutes);
 
 // off by default: a one-off backfill tool for a specific legacy export,
 // not part of the normal product surface

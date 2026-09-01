@@ -5,6 +5,12 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- pre-release review pass: inputs/selects now match the 34px button height everywhere (they were visibly shorter than buttons in the same toolbar row); fixed clipped Y-axis labels on the "Kategóriák havonta" chart; added prev/next month navigation to the main Áttekintés date filter
+
+- fixed dev live-reload not actually working on Docker Desktop for Windows: native fs-change events don't cross the bind mount reliably, so Vite and tsx were silently serving stale code. Backend dev script now runs via nodemon --legacy-watch (polling); frontend Vite config now polls too
+- added net worth tracking: a third category type ('savings', alongside expense/income), a Megtakarítás page showing liquid cash vs. money moved into savings/investment buckets and the total net worth, and a one-time opening balance setting. Any transaction can be reclassified as a savings move straight from its category dropdown on Tranzakciók (with a way back)
+- added recurring payments: an Ismétlődők page to define expected monthly bills/income/savings transfers (day of month, amount, category — manually or picked from an existing transaction), with a "missing this month" list and a one-click "record it now" action
+
 - added a "Havi összehasonlítás" (monthly comparison) card on Áttekintés: per expense category, current vs previous month with the delta (amount + %), plus a monthly average across all months of data; month navigable with arrows
 - fixed an "ambiguous column name: type" 500 on GET /api/transactions?type=... (categories.type collided with transactions.type after the categories JOIN)
 

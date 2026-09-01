@@ -64,6 +64,62 @@ migrate("2026-09-category-icons", () => {
   }
 });
 
+// widens categories.type and transactions.type to allow 'savings' in
+// addition to 'expense'/'income'; SQLite can't ALTER a CHECK constraint,
+// so this rebuilds both tables (the documented rename-table procedure)
+// and drops the old, never-used savings_goals/savings_contributions
+// tables that the new savings-category model replaces
+{
+  const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-type-widen");
+  if (!applied) {
+    db.pragma("foreign_keys = OFF");
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE categories_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+          color TEXT,
+          icon TEXT,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE (name, type)
+        );
+        INSERT INTO categories_new (id, name, type, color, icon, sort_order, created_at)
+          SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
+        DROP TABLE categories;
+        ALTER TABLE categories_new RENAME TO categories;
+
+        CREATE TABLE transactions_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+          amount REAL NOT NULL CHECK (amount > 0),
+          description TEXT NOT NULL DEFAULT '',
+          category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+          date TEXT NOT NULL,
+          source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'import')),
+          import_hash TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO transactions_new (id, type, amount, description, category_id, date, source, import_hash, created_at)
+          SELECT id, type, amount, description, category_id, date, source, import_hash, created_at FROM transactions;
+        DROP TABLE transactions;
+        ALTER TABLE transactions_new RENAME TO transactions;
+
+        CREATE UNIQUE INDEX idx_transactions_import_hash ON transactions(import_hash) WHERE import_hash IS NOT NULL;
+        CREATE INDEX idx_transactions_date ON transactions(date);
+        CREATE INDEX idx_transactions_category ON transactions(category_id);
+        CREATE INDEX idx_transactions_type ON transactions(type);
+
+        DROP TABLE IF EXISTS savings_contributions;
+        DROP TABLE IF EXISTS savings_goals;
+      `);
+      db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-type-widen");
+    })();
+    db.pragma("foreign_keys = ON");
+  }
+}
+
 const insertCategory = db.prepare(
   "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
 );
