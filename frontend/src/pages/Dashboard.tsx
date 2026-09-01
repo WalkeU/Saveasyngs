@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api } from "../api";
 import { categoryColor, formatMoney, toLocalDateInput } from "../format";
+import { CategoryIcon } from "../IconPicker";
 import type { ReportByCategory, ReportSummary, TransactionType } from "../types";
 
 function monthBounds(offset = 0) {
@@ -126,15 +127,7 @@ export function Dashboard() {
                   <div key={row.category_id ?? "none"}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 4 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 999,
-                            background: categoryColor(row.category_id, row.category_color),
-                            display: "inline-block",
-                          }}
-                        />
+                        <CategoryIcon icon={row.category_icon} color={categoryColor(row.category_id, row.category_color)} />
                         {row.category_name}
                         <span style={{ color: "var(--ink-faint)" }}>({row.count})</span>
                       </span>

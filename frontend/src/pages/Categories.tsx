@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { IconChevronDown, IconChevronUp, IconLanguage, IconPlus, IconReset, IconTrash } from "../icons";
+import { IconPicker } from "../IconPicker";
 import type { Category, TransactionType } from "../types";
 
 const EN_TRANSLATIONS: Record<string, string> = {
@@ -38,6 +39,11 @@ export function Categories() {
 
   async function recolor(id: number, color: string) {
     const updated = await api.categories.update(id, { color });
+    setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
+  }
+
+  async function reicon(id: number, icon: string) {
+    const updated = await api.categories.update(id, { icon });
     setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
   }
 
@@ -91,6 +97,7 @@ export function Categories() {
           onCreated={(c) => setCategories((prev) => [...prev, c])}
           onRename={rename}
           onRecolor={recolor}
+          onReicon={reicon}
           onDelete={remove}
           onMove={move}
         />
@@ -101,6 +108,7 @@ export function Categories() {
           onCreated={(c) => setCategories((prev) => [...prev, c])}
           onRename={rename}
           onRecolor={recolor}
+          onReicon={reicon}
           onDelete={remove}
           onMove={move}
         />
@@ -116,6 +124,7 @@ function CategoryGroup({
   onCreated,
   onRename,
   onRecolor,
+  onReicon,
   onDelete,
   onMove,
 }: {
@@ -125,6 +134,7 @@ function CategoryGroup({
   onCreated: (c: Category) => void;
   onRename: (id: number, name: string) => void;
   onRecolor: (id: number, color: string) => void;
+  onReicon: (id: number, icon: string) => void;
   onDelete: (id: number) => void;
   onMove: (id: number, direction: "up" | "down") => void;
 }) {
@@ -164,6 +174,7 @@ function CategoryGroup({
                 <IconChevronDown />
               </button>
             </div>
+            <IconPicker value={c.icon} onChange={(icon) => onReicon(c.id, icon)} />
             <input
               type="color"
               value={c.color ?? "#a89d87"}

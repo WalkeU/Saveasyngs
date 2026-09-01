@@ -130,6 +130,13 @@ export function Transactions() {
           <label>Leírás keresése</label>
           <input value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="pl. Tesco" />
         </div>
+        <button
+          type="button"
+          className={`btn btn-sm ${categoryId === "none" ? "btn-primary" : ""}`}
+          onClick={() => setCategoryId(categoryId === "none" ? "" : "none")}
+        >
+          Kategorizálatlan
+        </button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>

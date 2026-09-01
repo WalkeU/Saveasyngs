@@ -34,6 +34,7 @@ export async function reportRoutes(app: FastifyInstance) {
              categories.id AS category_id,
              COALESCE(categories.name, 'Kategorizálatlan') AS category_name,
              categories.color AS category_color,
+             categories.icon AS category_icon,
              transactions.type AS type,
              SUM(transactions.amount) AS total,
              COUNT(*) AS count

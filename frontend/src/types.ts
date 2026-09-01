@@ -5,6 +5,7 @@ export interface Category {
   name: string;
   type: TransactionType;
   color: string | null;
+  icon: string | null;
   sort_order: number;
   created_at: string;
 }
@@ -37,6 +38,7 @@ export interface ReportByCategory {
   category_id: number | null;
   category_name: string;
   category_color: string | null;
+  category_icon: string | null;
   type: TransactionType;
   total: number;
   count: number;
@@ -63,4 +65,6 @@ export interface ImportResult {
   imported: number;
   duplicates: number;
   skipped: number;
+  duplicateRows: { date: string; description: string; amount: number; type: TransactionType }[];
+  skippedRows: { date: string; description: string; amount: string; reason: string }[];
 }

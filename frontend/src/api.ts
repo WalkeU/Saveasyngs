@@ -28,9 +28,9 @@ export const api = {
   categories: {
     list: (type?: TransactionType) =>
       request<Category[]>(`/api/categories${type ? `?type=${type}` : ""}`),
-    create: (data: { name: string; type: TransactionType; color?: string }) =>
+    create: (data: { name: string; type: TransactionType; color?: string; icon?: string }) =>
       request<Category>("/api/categories", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: number, data: { name?: string; color?: string }) =>
+    update: (id: number, data: { name?: string; color?: string; icon?: string }) =>
       request<Category>(`/api/categories/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id: number) => request<void>(`/api/categories/${id}`, { method: "DELETE" }),
     move: (id: number, direction: "up" | "down") =>

@@ -5,6 +5,7 @@ export interface Category {
   name: string;
   type: TransactionType;
   color: string | null;
+  icon: string | null;
   sort_order: number;
   created_at: string;
 }

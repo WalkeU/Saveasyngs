@@ -7,11 +7,13 @@ interface CreateCategoryBody {
   name: string;
   type: TransactionType;
   color?: string;
+  icon?: string;
 }
 
 interface UpdateCategoryBody {
   name?: string;
   color?: string;
+  icon?: string;
 }
 
 interface MoveBody {
@@ -32,7 +34,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   });
 
   app.post<{ Body: CreateCategoryBody }>("/api/categories", async (req, reply) => {
-    const { name, type, color } = req.body;
+    const { name, type, color, icon } = req.body;
     if (!name?.trim() || (type !== "expense" && type !== "income")) {
       return reply.code(400).send({ error: "name and a valid type are required" });
     }
@@ -41,8 +43,8 @@ export async function categoryRoutes(app: FastifyInstance) {
         .prepare("SELECT COALESCE(MAX(sort_order), -1) AS maxOrder FROM categories WHERE type = ?")
         .get(type) as { maxOrder: number };
       const result = db
-        .prepare("INSERT INTO categories (name, type, color, sort_order) VALUES (?, ?, ?, ?)")
-        .run(name.trim(), type, color ?? null, maxOrder + 1);
+        .prepare("INSERT INTO categories (name, type, color, icon, sort_order) VALUES (?, ?, ?, ?, ?)")
+        .run(name.trim(), type, color ?? null, icon ?? null, maxOrder + 1);
       const category = db
         .prepare("SELECT * FROM categories WHERE id = ?")
         .get(result.lastInsertRowid) as Category;
@@ -63,7 +65,13 @@ export async function categoryRoutes(app: FastifyInstance) {
 
       const name = req.body.name?.trim() ?? existing.name;
       const color = req.body.color ?? existing.color;
-      db.prepare("UPDATE categories SET name = ?, color = ? WHERE id = ?").run(name, color, id);
+      const icon = req.body.icon ?? existing.icon;
+      db.prepare("UPDATE categories SET name = ?, color = ?, icon = ? WHERE id = ?").run(
+        name,
+        color,
+        icon,
+        id,
+      );
       return db.prepare("SELECT * FROM categories WHERE id = ?").get(id) as Category;
     },
   );
@@ -116,7 +124,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   // category are cascade-deleted with it
   app.post("/api/categories/reset", async () => {
     const insertCategory = db.prepare(
-      "INSERT INTO categories (name, type, sort_order) VALUES (@name, @type, @sortOrder)",
+      "INSERT INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
     );
     const reset = db.transaction(() => {
       db.exec("DELETE FROM categories");

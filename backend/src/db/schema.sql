@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
   color TEXT,
+  icon TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (name, type)

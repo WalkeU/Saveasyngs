@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
 import { IconUpload } from "../icons";
+import { formatMoney } from "../format";
 import type { ImportPreview, ImportResult } from "../types";
 
 export function Import() {
@@ -221,12 +222,69 @@ export function Import() {
             <ResultStat label="Duplikátum" value={result.duplicates} tone="muted" />
             <ResultStat label="Kihagyva" value={result.skipped} tone="expense" />
           </div>
-          <button className="btn btn-primary" onClick={reset}>
+
+          {result.duplicateRows.length > 0 && (
+            <RowDetails
+              title={`Duplikátumok (${result.duplicateRows.length})`}
+              headers={["Dátum", "Leírás", "Összeg"]}
+              rows={result.duplicateRows.map((r) => [r.date, r.description || "—", formatMoney(r.amount)])}
+            />
+          )}
+
+          {result.skippedRows.length > 0 && (
+            <RowDetails
+              title={`Kihagyva (${result.skippedRows.length})`}
+              headers={["Dátum", "Leírás", "Összeg", "Ok"]}
+              rows={result.skippedRows.map((r) => [r.date || "—", r.description || "—", r.amount || "—", r.reason])}
+            />
+          )}
+
+          <button className="btn btn-primary" onClick={reset} style={{ marginTop: 16 }}>
             Új import
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+function RowDetails({ title, headers, rows }: { title: string; headers: string[]; rows: string[][] }) {
+  return (
+    <details style={{ marginTop: 14 }}>
+      <summary style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 500, color: "var(--ink-soft)" }}>
+        {title}
+      </summary>
+      <div
+        style={{
+          marginTop: 10,
+          maxHeight: 260,
+          overflow: "auto",
+          border: "1px solid var(--hairline)",
+          borderRadius: "var(--radius-sm)",
+        }}
+      >
+        <table className="data-table">
+          <thead>
+            <tr>
+              {headers.map((h) => (
+                <th key={h}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {row.map((cell, j) => (
+                  <td key={j} style={{ whiteSpace: "nowrap" }}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }
 

@@ -98,17 +98,27 @@ export async function importRoutes(app: FastifyInstance) {
     );
 
     let imported = 0;
-    let duplicates = 0;
-    let skipped = 0;
+    const duplicateRows: { date: string; description: string; amount: number; type: string }[] = [];
+    const skippedRows: { date: string; description: string; amount: string; reason: string }[] = [];
 
     const run = db.transaction((csvRows: Record<string, string>[]) => {
       for (const row of csvRows) {
-        const amount = parseAmount(row[amountColumn] ?? "");
-        const dateIso = parseDate(row[dateColumn] ?? "");
+        const rawDate = row[dateColumn] ?? "";
+        const rawAmount = row[amountColumn] ?? "";
         const description = (row[descriptionColumn] ?? "").trim();
+        const amount = parseAmount(rawAmount);
+        const dateIso = parseDate(rawDate);
 
-        if (amount === null || amount === 0 || !dateIso) {
-          skipped++;
+        if (amount === null) {
+          skippedRows.push({ date: rawDate, description, amount: rawAmount, reason: "érvénytelen összeg" });
+          continue;
+        }
+        if (amount === 0) {
+          skippedRows.push({ date: rawDate, description, amount: rawAmount, reason: "nulla összegű tétel" });
+          continue;
+        }
+        if (!dateIso) {
+          skippedRows.push({ date: rawDate, description, amount: rawAmount, reason: "érvénytelen dátum" });
           continue;
         }
 
@@ -128,11 +138,18 @@ export async function importRoutes(app: FastifyInstance) {
           hash,
         );
         if (result.changes === 1) imported++;
-        else duplicates++;
+        else duplicateRows.push({ date: dateIso, description, amount: absAmount, type });
       }
     });
     run(rows);
 
-    return { total: rows.length, imported, duplicates, skipped };
+    return {
+      total: rows.length,
+      imported,
+      duplicates: duplicateRows.length,
+      skipped: skippedRows.length,
+      duplicateRows,
+      skippedRows,
+    };
   });
 }

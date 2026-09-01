@@ -29,6 +29,12 @@ try {
   // column already exists
 }
 
+try {
+  db.exec("ALTER TABLE categories ADD COLUMN icon TEXT");
+} catch {
+  // column already exists
+}
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;
@@ -46,8 +52,20 @@ migrate("2026-09-category-taxonomy-en", () => {
   db.exec("DELETE FROM categories");
 });
 
+// backfills the default icon for databases whose categories already existed
+// before the icon column was added; never overwrites a chosen icon, and
+// never touches a category outside the fixed default names
+migrate("2026-09-category-icons", () => {
+  const setIcon = db.prepare(
+    "UPDATE categories SET icon = ? WHERE name = ? AND type = ? AND icon IS NULL",
+  );
+  for (const category of defaultCategories) {
+    setIcon.run(category.icon, category.name, category.type);
+  }
+});
+
 const insertCategory = db.prepare(
-  "INSERT OR IGNORE INTO categories (name, type, sort_order) VALUES (@name, @type, @sortOrder)",
+  "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
 );
 const seedCategories = db.transaction((categories: typeof defaultCategories) => {
   const nextOrder: Record<string, number> = { expense: 0, income: 0 };

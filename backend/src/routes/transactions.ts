@@ -40,7 +40,9 @@ export async function transactionRoutes(app: FastifyInstance) {
       where.push("type = ?");
       params.push(type);
     }
-    if (categoryId) {
+    if (categoryId === "none") {
+      where.push("category_id IS NULL");
+    } else if (categoryId) {
       where.push("category_id = ?");
       params.push(Number(categoryId));
     }
