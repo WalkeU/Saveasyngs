@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- added category reordering (up/down) and a one-click "translate to English" button for the default categories
 - added transactions (expense/income, separately tracked), categories, category rules, CSV import with column-mapping auto-detection and duplicate protection, and category-breakdown reports — with a full UI (Áttekintés, Tranzakciók, Import, Kategóriák, Szabályok)
 - added README with start/stop commands, moved all ports into .env
 - added docker-compose dev (hot reload) and prod (Caddy + multi-stage builds) stacks, verified both end to end

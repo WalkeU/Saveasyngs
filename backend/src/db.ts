@@ -14,6 +14,20 @@ db.pragma("foreign_keys = ON");
 const schema = readFileSync(join(__dirname, "db", "schema.sql"), "utf-8");
 db.exec(schema);
 
+// added after the initial release; ignore the error on databases that already have it
+try {
+  db.exec("ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
+  // give existing rows a stable initial order instead of leaving them all at 0
+  db.exec(`
+    UPDATE categories
+    SET sort_order = ranked.rn
+    FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY type ORDER BY id) - 1 AS rn FROM categories) AS ranked
+    WHERE categories.id = ranked.id
+  `);
+} catch {
+  // column already exists
+}
+
 const defaultCategories: Array<{ name: string; type: "expense" | "income" }> = [
   { name: "Étkezés", type: "expense" },
   { name: "Bevásárlás", type: "expense" },
@@ -30,9 +44,13 @@ const defaultCategories: Array<{ name: string; type: "expense" | "income" }> = [
 ];
 
 const insertCategory = db.prepare(
-  "INSERT OR IGNORE INTO categories (name, type) VALUES (@name, @type)",
+  "INSERT OR IGNORE INTO categories (name, type, sort_order) VALUES (@name, @type, @sortOrder)",
 );
 const seedCategories = db.transaction((categories: typeof defaultCategories) => {
-  for (const category of categories) insertCategory.run(category);
+  const nextOrder: Record<string, number> = { expense: 0, income: 0 };
+  for (const category of categories) {
+    const sortOrder = nextOrder[category.type]++;
+    insertCategory.run({ ...category, sortOrder });
+  }
 });
 seedCategories(defaultCategories);

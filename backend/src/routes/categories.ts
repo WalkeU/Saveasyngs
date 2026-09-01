@@ -13,15 +13,21 @@ interface UpdateCategoryBody {
   color?: string;
 }
 
+interface MoveBody {
+  direction: "up" | "down";
+}
+
 export async function categoryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { type?: TransactionType } }>("/api/categories", async (req) => {
     const { type } = req.query;
     if (type) {
       return db
-        .prepare("SELECT * FROM categories WHERE type = ? ORDER BY name")
+        .prepare("SELECT * FROM categories WHERE type = ? ORDER BY sort_order, name")
         .all(type) as Category[];
     }
-    return db.prepare("SELECT * FROM categories ORDER BY type, name").all() as Category[];
+    return db
+      .prepare("SELECT * FROM categories ORDER BY type, sort_order, name")
+      .all() as Category[];
   });
 
   app.post<{ Body: CreateCategoryBody }>("/api/categories", async (req, reply) => {
@@ -30,9 +36,12 @@ export async function categoryRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "name and a valid type are required" });
     }
     try {
+      const { maxOrder } = db
+        .prepare("SELECT COALESCE(MAX(sort_order), -1) AS maxOrder FROM categories WHERE type = ?")
+        .get(type) as { maxOrder: number };
       const result = db
-        .prepare("INSERT INTO categories (name, type, color) VALUES (?, ?, ?)")
-        .run(name.trim(), type, color ?? null);
+        .prepare("INSERT INTO categories (name, type, color, sort_order) VALUES (?, ?, ?, ?)")
+        .run(name.trim(), type, color ?? null, maxOrder + 1);
       const category = db
         .prepare("SELECT * FROM categories WHERE id = ?")
         .get(result.lastInsertRowid) as Category;
@@ -55,6 +64,43 @@ export async function categoryRoutes(app: FastifyInstance) {
       const color = req.body.color ?? existing.color;
       db.prepare("UPDATE categories SET name = ?, color = ? WHERE id = ?").run(name, color, id);
       return db.prepare("SELECT * FROM categories WHERE id = ?").get(id) as Category;
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: MoveBody }>(
+    "/api/categories/:id/move",
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      const category = db.prepare("SELECT * FROM categories WHERE id = ?").get(id) as
+        | Category
+        | undefined;
+      if (!category) return reply.code(404).send({ error: "not found" });
+
+      const neighbor = db
+        .prepare(
+          `SELECT * FROM categories WHERE type = ? AND
+             ${req.body.direction === "up" ? "sort_order < ? ORDER BY sort_order DESC" : "sort_order > ? ORDER BY sort_order ASC"}
+           LIMIT 1`,
+        )
+        .get(category.type, category.sort_order) as Category | undefined;
+
+      if (neighbor) {
+        const swap = db.transaction(() => {
+          db.prepare("UPDATE categories SET sort_order = ? WHERE id = ?").run(
+            neighbor.sort_order,
+            category.id,
+          );
+          db.prepare("UPDATE categories SET sort_order = ? WHERE id = ?").run(
+            category.sort_order,
+            neighbor.id,
+          );
+        });
+        swap();
+      }
+
+      return db
+        .prepare("SELECT * FROM categories WHERE type = ? ORDER BY sort_order, name")
+        .all(category.type) as Category[];
     },
   );
 

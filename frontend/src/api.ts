@@ -33,6 +33,11 @@ export const api = {
     update: (id: number, data: { name?: string; color?: string }) =>
       request<Category>(`/api/categories/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id: number) => request<void>(`/api/categories/${id}`, { method: "DELETE" }),
+    move: (id: number, direction: "up" | "down") =>
+      request<Category[]>(`/api/categories/${id}/move`, {
+        method: "POST",
+        body: JSON.stringify({ direction }),
+      }),
   },
   transactions: {
     list: (params: Record<string, string | undefined>) => {

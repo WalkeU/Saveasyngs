@@ -73,6 +73,34 @@ export function IconPlus({ size = 16 }: IconProps) {
   );
 }
 
+export function IconChevronUp({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M5 15l7-7 7 7" />
+    </svg>
+  );
+}
+
+export function IconChevronDown({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M5 9l7 7 7-7" />
+    </svg>
+  );
+}
+
+export function IconLanguage({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4 6.5h9" />
+      <path d="M8.5 4v2.5c0 4-1.8 7.2-4.5 9" />
+      <path d="M6 11c1.2 1.8 3 3 5.5 3.5" />
+      <path d="M13.5 20l4-9 4 9" />
+      <path d="M14.9 17h5.2" />
+    </svg>
+  );
+}
+
 export function IconTrash({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
