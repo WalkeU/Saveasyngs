@@ -1,5 +1,8 @@
 # Savings
 
+Első indítás előtt (csak egyszer):
+cp .env.example .env
+
 Dev indítása:
 docker compose -f docker-compose.dev.yml up -d --build
 
@@ -18,7 +21,7 @@ docker compose -f docker-compose.prod.yml down
 - Dev backend: `http://localhost:$BACKEND_PORT/api/health`
 - Prod: `http://localhost:$HTTP_PORT`
 
-A portok a [`.env`](./.env) fájlban állíthatók.
+A portok a `.env` fájlban állíthatók (lásd [`.env.example`](./.env.example) — a `.env` maga nincs verziózva, csak sablon).
 
 ## Mi ez?
 

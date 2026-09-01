@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- .env is no longer tracked in git (gitignored now); added .env.example as the checked-in template, README updated to `cp .env.example .env` on first setup
+
 - added a "Legacy kategorizálás" section on the Import page, shown only when ENABLE_LEGACY_CATEGORY_IMPORT is on (GET /api/config exposes the flag), so the backfill feature has a UI trigger instead of curl-only
 
 - unified typography: dropped the Fraunces display serif, headings now use the same IBM Plex Sans as body text
