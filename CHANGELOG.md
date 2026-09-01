@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- unified typography: dropped the Fraunces display serif, headings now use the same IBM Plex Sans as body text
+
 - unified all button sizes across the app (removed the smaller .btn-sm variant, fixed height for both text and icon buttons)
 
 - added an opt-in legacy category backfill (POST /api/import/legacy-categorize, behind ENABLE_LEGACY_CATEGORY_IMPORT, off by default) that applies categories from an All-Accounts.csv-shaped export onto matching, still-uncategorized transactions
