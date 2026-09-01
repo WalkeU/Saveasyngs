@@ -39,6 +39,7 @@ export const api = {
         body: JSON.stringify({ direction }),
       }),
     reset: () => request<Category[]>("/api/categories/reset", { method: "POST" }),
+    autoColor: () => request<Category[]>("/api/categories/auto-color", { method: "POST" }),
   },
   transactions: {
     list: (params: Record<string, string | undefined>) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { IconChevronDown, IconChevronUp, IconLanguage, IconPlus, IconReset, IconTrash } from "../icons";
+import { IconChevronDown, IconChevronUp, IconLanguage, IconPalette, IconPlus, IconReset, IconTrash } from "../icons";
 import { IconPicker } from "../IconPicker";
 import type { Category, TransactionType } from "../types";
 
@@ -63,6 +63,11 @@ export function Categories() {
     await Promise.all(renames);
   }
 
+  async function autoColor() {
+    const colored = await api.categories.autoColor();
+    setCategories(colored);
+  }
+
   async function resetToDefaults() {
     const ok = window.confirm(
       "Ez törli az összes kategóriát (a sajátjaidat is), és visszaállítja az alap listát. A tranzakciók megmaradnak, csak kategória nélkül. Biztosan folytatod?",
@@ -82,6 +87,9 @@ export function Categories() {
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn" onClick={translateToEnglish}>
             <IconLanguage /> Angolra fordítás
+          </button>
+          <button className="btn" onClick={autoColor}>
+            <IconPalette /> Automatikus színezés
           </button>
           <button className="btn btn-danger" onClick={resetToDefaults}>
             <IconReset /> Alaphelyzet

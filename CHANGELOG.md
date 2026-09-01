@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- added an "Automatikus színezés" button on Kategóriák that assigns every category a color from the fixed palette in one click
+
 - added category icons: a curated Lucide icon set, a picker on the Kategóriák page, sensible defaults for every default category, and a fallback icon for anything unset
 - added an "uncategorized" quick filter on Tranzakciók
 - import results now list which rows were duplicates and which were skipped (with the reason), not just counts

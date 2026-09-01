@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
 import { defaultCategories } from "../default-categories.js";
+import { PALETTE } from "../palette.js";
 import type { Category, TransactionType } from "../types.js";
 
 interface CreateCategoryBody {
@@ -135,6 +136,24 @@ export async function categoryRoutes(app: FastifyInstance) {
       }
     });
     reset();
+    return db.prepare("SELECT * FROM categories ORDER BY type, sort_order, name").all() as Category[];
+  });
+
+  // assigns every category a color from the fixed palette, in display order,
+  // cycling if there are more categories of a type than palette colors
+  app.post("/api/categories/auto-color", async () => {
+    const categories = db
+      .prepare("SELECT * FROM categories ORDER BY type, sort_order, name")
+      .all() as Category[];
+    const setColor = db.prepare("UPDATE categories SET color = ? WHERE id = ?");
+    const run = db.transaction(() => {
+      const nextIndex: Record<string, number> = { expense: 0, income: 0 };
+      for (const category of categories) {
+        const index = nextIndex[category.type]++;
+        setColor.run(PALETTE[index % PALETTE.length], category.id);
+      }
+    });
+    run();
     return db.prepare("SELECT * FROM categories ORDER BY type, sort_order, name").all() as Category[];
   });
 }

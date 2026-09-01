@@ -110,6 +110,18 @@ export function IconReset({ size = 16 }: IconProps) {
   );
 }
 
+export function IconPalette({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.7-.8 1.7-1.7 0-.45-.18-.85-.46-1.15-.28-.3-.46-.7-.46-1.15 0-.9.75-1.6 1.65-1.6H16A4.5 4.5 0 0 0 20.5 10c0-3.6-3.8-6.5-8.5-6.5Z" />
+      <circle cx="7.3" cy="10.2" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="9.8" cy="7" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="14.2" cy="7" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="16.7" cy="10.2" r="1.15" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconTrash({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
