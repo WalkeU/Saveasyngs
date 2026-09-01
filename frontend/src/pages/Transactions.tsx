@@ -59,9 +59,12 @@ export function Transactions() {
     setSuggestion(null);
   }
 
-  async function handleDelete(id: number) {
-    await api.transactions.remove(id);
-    setRows((prev) => prev.filter((r) => r.id !== id));
+  async function handleDelete(transaction: Transaction) {
+    const label = transaction.description.trim() || formatMoney(transaction.amount);
+    const ok = window.confirm(`Biztosan törlöd ezt a tranzakciót: "${label}"?`);
+    if (!ok) return;
+    await api.transactions.remove(transaction.id);
+    setRows((prev) => prev.filter((r) => r.id !== transaction.id));
     setTotal((t) => t - 1);
   }
 
@@ -179,7 +182,7 @@ export function Transactions() {
                     {formatMoney(row.amount)}
                   </td>
                   <td>
-                    <button className="btn btn-icon btn-ghost btn-danger" onClick={() => handleDelete(row.id)} title="Törlés">
+                    <button className="btn btn-icon btn-ghost btn-danger" onClick={() => handleDelete(row)} title="Törlés">
                       <IconTrash />
                     </button>
                   </td>

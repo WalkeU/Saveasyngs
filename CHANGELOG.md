@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- transaction delete now asks for confirmation before removing
+
 - added an "Automatikus színezés" button on Kategóriák that assigns every category a color from the fixed palette in one click
 
 - added category icons: a curated Lucide icon set, a picker on the Kategóriák page, sensible defaults for every default category, and a fallback icon for anything unset
