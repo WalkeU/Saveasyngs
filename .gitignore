@@ -5,6 +5,7 @@ build/
 .env.local
 data/
 data-dev/
+data-test/
 *.db
 *.sqlite
 *.sqlite3
