@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- the "Szabad (liquid) pénz" figure on Megtakarítás can now be set manually (same as a savings bucket's mark-to-market value) — click into it and type the real number, a "kézi" badge shows it's overridden, and a revert button switches back to the calculated (income − expense − savings-transfers) figure
 - CSV import now picks up the time-of-day from the date column when the bank export includes one (e.g. "2026-09-01 14:32:00"), and shows it next to the date in Tranzakciók ("2026. szept. 1. · 14:32"); re-importing the same file safely backfills the time onto already-imported rows that are missing it, without creating duplicates
 - fixed the "Kategorizálatlan" filter always showing savings transfers as uncategorized — they don't use category_id (they use bucket_id instead), so the filter now checks bucket_id for savings and category_id for everything else
 - rule creation suggestion is now a small tag-icon button next to the category dropdown that opens a compact popover — no more full-width banner pinned to the top of the page forcing a scroll

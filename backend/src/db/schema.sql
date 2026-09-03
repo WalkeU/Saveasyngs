@@ -29,6 +29,17 @@ CREATE TABLE IF NOT EXISTS savings_buckets (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- manual override for "szabad (liquid) pénz" on the net worth page, for when
+-- the calculated income-expense-savings figure doesn't match the real
+-- liquid cash on hand (e.g. cash or accounts that aren't tracked as
+-- transactions). Single row; a NULL value means "use the calculated figure",
+-- same convention as savings_buckets.manual_value.
+CREATE TABLE IF NOT EXISTS liquid_override (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  value REAL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- one-time data migrations, tracked by name so each runs at most once
 CREATE TABLE IF NOT EXISTS _migrations (
   name TEXT PRIMARY KEY,

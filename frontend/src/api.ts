@@ -148,6 +148,8 @@ export const api = {
   },
   networth: {
     get: () => request<NetWorth>("/api/networth"),
+    setLiquid: (value: number | null) =>
+      request<NetWorth>("/api/networth/liquid", { method: "PATCH", body: JSON.stringify({ value }) }),
   },
   buckets: {
     list: () => request<SavingsBucket[]>("/api/buckets"),

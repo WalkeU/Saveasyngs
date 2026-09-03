@@ -145,6 +145,8 @@ export interface NetWorthBucket {
 
 export interface NetWorth {
   liquid: number;
+  liquidCalculated: number;
+  liquidIsManual: boolean;
   buckets: NetWorthBucket[];
   netWorth: number;
 }

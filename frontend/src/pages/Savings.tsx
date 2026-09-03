@@ -46,6 +46,11 @@ export function Savings() {
     load();
   }
 
+  async function setLiquid(value: number | null) {
+    const net = await api.networth.setLiquid(value);
+    setData(net);
+  }
+
   const bucketsTotal = data?.buckets.reduce((sum, b) => sum + b.total, 0) ?? 0;
 
   return (
@@ -62,7 +67,7 @@ export function Savings() {
       {!loading && data && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
           <StatCard label="Nettó vagyon" value={data.netWorth} />
-          <StatCard label="Szabad (liquid) pénz" value={data.liquid} muted />
+          <LiquidCard data={data} onSet={setLiquid} />
           <StatCard label="Lekötve összesen" value={bucketsTotal} muted />
         </div>
       )}
@@ -208,6 +213,56 @@ function TransferForm({
           Átrakás
         </button>
       </form>
+    </div>
+  );
+}
+
+function LiquidCard({ data, onSet }: { data: NetWorth; onSet: (value: number | null) => void }) {
+  return (
+    <div className="card">
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-soft)", flex: 1 }}>
+          Szabad (liquid) pénz
+        </div>
+        {data.liquidIsManual && (
+          <span className="badge badge-muted" title="Kézzel beállított érték, nem a tranzakciókból számolva">
+            kézi
+          </span>
+        )}
+        {data.liquidIsManual && (
+          <button
+            className="btn btn-icon btn-ghost"
+            onClick={() => onSet(null)}
+            title="Vissza automatikus (tranzakció-alapú) számolásra"
+          >
+            <IconRepeat size={12} />
+          </button>
+        )}
+      </div>
+      <input
+        key={data.liquid}
+        type="number"
+        defaultValue={data.liquid}
+        onBlur={(e) => {
+          const next = Number(e.target.value);
+          if (!Number.isNaN(next) && next !== data.liquid) onSet(next);
+        }}
+        className="tabular"
+        style={{
+          fontSize: 26,
+          fontWeight: 600,
+          color: "var(--ink)",
+          width: "100%",
+          border: "none",
+          background: "none",
+          padding: 0,
+        }}
+        title={
+          data.liquidIsManual
+            ? "Kézzel beállított érték — kattints és írd át, vagy állítsd vissza az automatikus számolásra"
+            : `Kattints és írd át, ha eltér a valóstól (a számolt érték: ${data.liquidCalculated})`
+        }
+      />
     </div>
   );
 }
