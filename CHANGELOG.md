@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- Tranzakciók no longer silently caps at a fixed 100 rows — it now infinite-scrolls, loading the next batch automatically as you scroll down, until every matching transaction has loaded. Batch size (default 100) is configurable on Beállítások
 - money amounts no longer show ugly floating-point noise (e.g. "235437.5700000003") — they're rounded (0.5 always rounds up, never banker's rounding) everywhere they're displayed or typed into, including the liquid/bucket override inputs and the editable transaction amount. New Beállítások page lets you set how many decimal places to round/show (forint defaults to 0; a bucket tracking something fractional like crypto can use more)
 - the "Szabad (liquid) pénz" figure on Megtakarítás can now be set manually (same as a savings bucket's mark-to-market value) — click into it and type the real number, a "kézi" badge shows it's overridden, and a revert button switches back to the calculated (income − expense − savings-transfers) figure
 - CSV import now picks up the time-of-day from the date column when the bank export includes one (e.g. "2026-09-01 14:32:00"), and shows it next to the date in Tranzakciók ("2026. szept. 1. · 14:32"); re-importing the same file safely backfills the time onto already-imported rows that are missing it, without creating duplicates

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { evaluateAmountExpression, formatDate, formatMoney, roundMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTag, IconTrash } from "../icons";
@@ -18,6 +18,10 @@ export function Transactions() {
   const [qInput, setQInput] = useState("");
   const [q, setQ] = useState("");
 
+  const [batchSize, setBatchSize] = useState(100);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   const [showAdd, setShowAdd] = useState(false);
   const [suggestion, setSuggestion] = useState<{ transaction: Transaction; categoryId: number; pattern: string } | null>(
     null,
@@ -27,6 +31,7 @@ export function Transactions() {
   useEffect(() => {
     api.categories.list().then(setCategories);
     api.buckets.list().then(setBuckets);
+    api.settings.get().then((s) => setBatchSize(s.transactionsBatchSize));
   }, []);
 
   useEffect(() => {
@@ -37,7 +42,13 @@ export function Transactions() {
   const load = () => {
     setLoading(true);
     api.transactions
-      .list({ type: type || undefined, categoryId: categoryId || undefined, q: q || undefined })
+      .list({
+        type: type || undefined,
+        categoryId: categoryId || undefined,
+        q: q || undefined,
+        limit: String(batchSize),
+        offset: "0",
+      })
       .then(({ rows, total }) => {
         setRows(rows);
         setTotal(total);
@@ -45,7 +56,44 @@ export function Transactions() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, [type, categoryId, q]);
+  useEffect(load, [type, categoryId, q, batchSize]);
+
+  async function loadMore() {
+    if (loadingMore || rows.length >= total) return;
+    setLoadingMore(true);
+    try {
+      const { rows: next } = await api.transactions.list({
+        type: type || undefined,
+        categoryId: categoryId || undefined,
+        q: q || undefined,
+        limit: String(batchSize),
+        offset: String(rows.length),
+      });
+      setRows((prev) => [...prev, ...next]);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  // keeps the observer stable across renders while always calling the
+  // latest loadMore (which closes over the current filters/rows)
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+
+  const hasMore = rows.length < total;
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: "600px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore]);
 
   async function handleCategoryChange(transaction: Transaction, newCategoryId: string) {
     const idNum = newCategoryId ? Number(newCategoryId) : null;
@@ -119,7 +167,7 @@ export function Transactions() {
       <div className="page-header">
         <div>
           <h1>Tranzakciók</h1>
-          <div className="page-sub">{total} tétel</div>
+          <div className="page-sub">{hasMore ? `${rows.length} / ${total} tétel` : `${total} tétel`}</div>
         </div>
         <button className="btn btn-primary" onClick={() => setShowAdd((s) => !s)}>
           <IconPlus /> Új tétel
@@ -308,6 +356,15 @@ export function Transactions() {
           </table>
         )}
       </div>
+
+      {hasMore && (
+        <div
+          ref={sentinelRef}
+          style={{ textAlign: "center", padding: "18px 0", fontSize: 12.5, color: "var(--ink-faint)" }}
+        >
+          {loadingMore ? "Betöltés…" : ""}
+        </div>
+      )}
     </div>
   );
 }

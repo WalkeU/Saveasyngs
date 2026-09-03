@@ -34,7 +34,7 @@ interface UpdateBody {
 export async function transactionRoutes(app: FastifyInstance) {
   app.get<{ Querystring: ListQuery }>("/api/transactions", async (req) => {
     const { type, categoryId, bucketId, q, from, to } = req.query;
-    const limit = Math.min(Number(req.query.limit ?? 100), 500);
+    const limit = Math.min(Number(req.query.limit ?? 100), 1000);
     const offset = Number(req.query.offset ?? 0);
 
     const where: string[] = [];

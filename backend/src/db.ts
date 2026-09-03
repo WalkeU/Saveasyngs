@@ -68,6 +68,12 @@ try {
   // column already exists
 }
 
+try {
+  db.exec("ALTER TABLE app_settings ADD COLUMN transactions_batch_size INTEGER NOT NULL DEFAULT 100");
+} catch {
+  // column already exists
+}
+
 db.exec("INSERT OR IGNORE INTO app_settings (id, decimal_places) VALUES (1, 0)");
 
 function migrate(name: string, run: () => void) {

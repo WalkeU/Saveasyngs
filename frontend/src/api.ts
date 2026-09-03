@@ -149,8 +149,8 @@ export const api = {
   },
   settings: {
     get: () => request<AppSettings>("/api/settings"),
-    update: (decimalPlaces: number) =>
-      request<AppSettings>("/api/settings", { method: "PATCH", body: JSON.stringify({ decimalPlaces }) }),
+    update: (data: Partial<AppSettings>) =>
+      request<AppSettings>("/api/settings", { method: "PATCH", body: JSON.stringify(data) }),
   },
   networth: {
     get: () => request<NetWorth>("/api/networth"),

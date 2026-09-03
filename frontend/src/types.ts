@@ -153,6 +153,7 @@ export interface NetWorth {
 
 export interface AppSettings {
   decimalPlaces: number;
+  transactionsBatchSize: number;
 }
 
 export interface LegacyImportResult {
