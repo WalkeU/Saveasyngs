@@ -6,7 +6,7 @@ kerül az új bejegyzés.
 ## Unreleased
 
 - rule creation suggestion is now a small tag-icon button next to the category dropdown that opens a compact popover — no more full-width banner pinned to the top of the page forcing a scroll
-- hovering a transaction's date in the Tranzakciók list now shows the exact creation timestamp (down to the second) as a tooltip
+- hovering a transaction's date in the Tranzakciók list now shows a tooltip with when the row was recorded ("Importálva" for imports, "Rögzítve" for manual entries) — not labeled as the transaction's own time, since only a date (no time-of-day) is stored for that
 - creating a category rule (manually or via the "learn this pattern" suggestion) now also applies retroactively to existing, still-uncategorized transactions matching the pattern — not just future imports
 - transaction amounts are now editable directly in the Tranzakciók list — click into the amount, type a math expression after the existing value (e.g. click "31000" and type "-3000" so it reads "31000-3000"), it evaluates on blur; the new-transaction form's amount field works the same way
 - savings buckets can now hold a manual mark-to-market value and a free-text note (e.g. "10 AAPL + 5 VOO") — for holdings like stocks/crypto whose value moves on its own; editing the value directly on Megtakarítás overrides the transfer-sum, and a later transfer into that bucket adds onto it instead of being ignored
