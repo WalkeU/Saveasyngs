@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { formatDate, formatMoney, toLocalDateInput } from "../format";
+import { evaluateAmountExpression, formatDate, formatMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTrash } from "../icons";
 import type { Category, SavingsBucket, Transaction, TransactionType } from "../types";
 
@@ -77,6 +77,16 @@ export function Transactions() {
       return;
     }
     await handleCategoryChange(transaction, value);
+  }
+
+  async function handleAmountChange(transaction: Transaction, input: HTMLInputElement) {
+    const next = evaluateAmountExpression(input.value);
+    if (next === null || next === transaction.amount) {
+      input.value = String(transaction.amount);
+      return;
+    }
+    const updated = await api.transactions.update(transaction.id, { amount: next });
+    setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
   }
 
   async function confirmRule() {
@@ -232,7 +242,17 @@ export function Transactions() {
                   </td>
                   <td className={`tabular amount-${row.type}`} style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     {row.type === "expense" ? "−" : row.type === "income" ? "+" : "⇄"}
-                    {formatMoney(row.amount)}
+                    <input
+                      key={row.amount}
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={row.amount}
+                      onBlur={(e) => handleAmountChange(row, e.target)}
+                      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      className="tabular inline-amount-input"
+                      title="Beírhatsz képletet is, pl. meglévő érték után: -3000"
+                    />{" "}
+                    Ft
                   </td>
                   <td>
                     <button className="btn btn-icon btn-ghost btn-danger" onClick={() => handleDelete(row)} title="Törlés">
@@ -270,12 +290,13 @@ function AddForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || Number(amount) <= 0) return;
+    const parsedAmount = evaluateAmountExpression(amount);
+    if (parsedAmount === null) return;
     setSaving(true);
     try {
       const created = await api.transactions.create({
         type,
-        amount: Number(amount),
+        amount: parsedAmount,
         description,
         categoryId: type === "savings" ? null : categoryId ? Number(categoryId) : null,
         bucketId: type === "savings" ? (bucketId ? Number(bucketId) : null) : null,
@@ -299,7 +320,14 @@ function AddForm({
       </div>
       <div className="field">
         <label>Összeg</label>
-        <input type="number" min="0" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="pl. 31000-3000"
+          required
+        />
       </div>
       <div className="field" style={{ flex: 1, minWidth: 160 }}>
         <label>Leírás</label>

@@ -338,6 +338,25 @@ select:focus {
   color: var(--ink-soft);
 }
 
+.inline-amount-input {
+  height: auto;
+  width: 88px;
+  padding: 1px 2px;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  border-radius: 0;
+}
+.inline-amount-input:hover {
+  border-bottom-color: var(--hairline);
+}
+.inline-amount-input:focus {
+  border-bottom-color: var(--accent);
+}
+
 .banner {
   display: flex;
   align-items: center;

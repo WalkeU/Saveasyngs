@@ -34,6 +34,22 @@ export function formatMoney(amount: number): string {
   return money.format(amount);
 }
 
+// lets an amount field accept e.g. "31000-3000" typed after the existing
+// value and evaluate it on blur. Only digits/+-*/().space ever reach
+// Function() — anything else (letters, semicolons, ...) fails the regex
+// first, so this can't execute arbitrary code.
+export function evaluateAmountExpression(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed || !/^[0-9+\-*/(). ]+$/.test(trimmed)) return null;
+  try {
+    const result = Function(`"use strict"; return (${trimmed});`)() as unknown;
+    if (typeof result !== "number" || !Number.isFinite(result) || result === 0) return null;
+    return Math.abs(result);
+  } catch {
+    return null;
+  }
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "short", day: "numeric" }).format(
     new Date(iso),
