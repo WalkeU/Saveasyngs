@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { evaluateAmountExpression, formatDate, formatDateTime, formatMoney, toLocalDateInput } from "../format";
+import { evaluateAmountExpression, formatDate, formatMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTag, IconTrash } from "../icons";
 import type { Category, CategoryRule, SavingsBucket, Transaction, TransactionType } from "../types";
 
@@ -190,10 +190,7 @@ export function Transactions() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td
-                    style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}
-                    title={`${row.source === "import" ? "Importálva" : "Rögzítve"}: ${formatDateTime(row.created_at)}`}
-                  >
+                  <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}>
                     {formatDate(row.date)}
                   </td>
                   <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
