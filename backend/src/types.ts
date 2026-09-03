@@ -51,9 +51,3 @@ export interface RecurringPayment {
   enabled: 0 | 1;
   created_at: string;
 }
-
-export interface NetWorthOpening {
-  id: 1;
-  opening_liquid: number;
-  opening_date: string;
-}

@@ -61,16 +61,6 @@ CREATE TABLE IF NOT EXISTS import_profiles (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- single-row settings: the liquid cash balance and date you started
--- tracking from. Net worth = opening_liquid + all income - all expense
--- (savings-type transactions just shift money between liquid and a
--- bucket, so they net out of the total; see /api/networth)
-CREATE TABLE IF NOT EXISTS net_worth_opening (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
-  opening_liquid REAL NOT NULL DEFAULT 0,
-  opening_date TEXT NOT NULL DEFAULT (date('now'))
-);
-
 -- a bill/subscription/transfer you expect every month; used to flag
 -- what hasn't shown up yet this month (see /api/recurring/missing)
 CREATE TABLE IF NOT EXISTS recurring_payments (

@@ -120,6 +120,14 @@ migrate("2026-09-category-icons", () => {
   }
 }
 
+// removed: a separate "opening balance" setting for net worth. Simpler to
+// have one place for money in (income transactions) than to reconcile an
+// opening balance against them — if you had savings before you started
+// tracking, just add them as a manual income transaction.
+migrate("2026-09-drop-net-worth-opening", () => {
+  db.exec("DROP TABLE IF EXISTS net_worth_opening");
+});
+
 const insertCategory = db.prepare(
   "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
 );

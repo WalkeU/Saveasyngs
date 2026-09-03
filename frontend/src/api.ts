@@ -8,7 +8,6 @@ import type {
   MonthlyByCategory,
   MonthlyComparison,
   NetWorth,
-  NetWorthOpening,
   RecurringPayment,
   ReportByCategory,
   ReportSummary,
@@ -145,11 +144,6 @@ export const api = {
   },
   networth: {
     get: () => request<NetWorth>("/api/networth"),
-    setOpening: (openingLiquid: number, openingDate?: string) =>
-      request<NetWorthOpening>("/api/networth/opening", {
-        method: "POST",
-        body: JSON.stringify({ openingLiquid, openingDate }),
-      }),
   },
   recurring: {
     list: () => request<RecurringPayment[]>("/api/recurring"),

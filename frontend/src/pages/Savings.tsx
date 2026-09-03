@@ -1,36 +1,20 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { formatMoney, toLocalDateInput } from "../format";
+import { formatMoney } from "../format";
 import { CategoryIcon } from "../IconPicker";
 import type { NetWorth } from "../types";
 
 export function Savings() {
   const [data, setData] = useState<NetWorth | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editingOpening, setEditingOpening] = useState(false);
-  const [openingLiquid, setOpeningLiquid] = useState("");
-  const [openingDate, setOpeningDate] = useState(toLocalDateInput(new Date()));
 
-  const load = () => {
+  useEffect(() => {
     setLoading(true);
     api.networth
       .get()
-      .then((d) => {
-        setData(d);
-        setOpeningLiquid(String(d.opening.opening_liquid));
-        setOpeningDate(d.opening.opening_date);
-      })
+      .then(setData)
       .finally(() => setLoading(false));
-  };
-
-  useEffect(load, []);
-
-  async function saveOpening(e: React.FormEvent) {
-    e.preventDefault();
-    await api.networth.setOpening(Number(openingLiquid) || 0, openingDate);
-    setEditingOpening(false);
-    load();
-  }
+  }, []);
 
   const bucketsTotal = data?.buckets.reduce((sum, b) => sum + b.total, 0) ?? 0;
 
@@ -43,42 +27,7 @@ export function Savings() {
             A vagyonod összetétele — mennyi a szabad (liquid) pénzed, és mennyi van lekötve
           </div>
         </div>
-        <button className="btn" onClick={() => setEditingOpening((s) => !s)}>
-          Nyitó egyenleg
-        </button>
       </div>
-
-      {editingOpening && (
-        <form
-          className="card"
-          onSubmit={saveOpening}
-          style={{ marginBottom: 18, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}
-        >
-          <div className="field">
-            <label>Nyitó szabad (liquid) egyenleg</label>
-            <input
-              type="number"
-              value={openingLiquid}
-              onChange={(e) => setOpeningLiquid(e.target.value)}
-              style={{ width: 160 }}
-            />
-          </div>
-          <div className="field">
-            <label>Dátum</label>
-            <input type="date" value={openingDate} onChange={(e) => setOpeningDate(e.target.value)} />
-          </div>
-          <button className="btn btn-primary" type="submit">
-            Mentés
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={() => setEditingOpening(false)}>
-            Mégse
-          </button>
-          <div style={{ flexBasis: "100%", fontSize: 12.5, color: "var(--ink-faint)" }}>
-            Ezt csak egyszer kell beállítanod — a kezdő állapotot, amitől kezdve a rendszer a bevételekből,
-            kiadásokból és megtakarításokból számolja tovább a vagyonod.
-          </div>
-        </form>
-      )}
 
       {!loading && data && (
         <>

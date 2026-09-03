@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- removed the net worth "opening balance" setting — it's simpler to have one place for money in (income transactions) than a separate balance to reconcile against them; if you had savings before you started tracking, add them as a manual income transaction instead. Net worth is now just income − expense − savings-transfers
+
 ## v0.1.0 — 2026-09-01
 
 Első release.

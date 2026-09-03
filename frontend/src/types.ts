@@ -113,12 +113,6 @@ export interface MissingRecurring {
   missing: RecurringPayment[];
 }
 
-export interface NetWorthOpening {
-  id: 1;
-  opening_liquid: number;
-  opening_date: string;
-}
-
 export interface NetWorthBucket {
   category_id: number;
   category_name: string;
@@ -128,7 +122,6 @@ export interface NetWorthBucket {
 }
 
 export interface NetWorth {
-  opening: NetWorthOpening;
   liquid: number;
   buckets: NetWorthBucket[];
   netWorth: number;
