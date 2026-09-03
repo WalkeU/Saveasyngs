@@ -5,8 +5,6 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
-- prod Caddy can now join an external Docker network (`proxy` by default, `PROXY_NETWORK` in .env) so a Docker-based reverse proxy (Traefik, nginx-proxy-manager, another Caddy, ...) can reach it by container name instead of needing HTTP_PORT; direct host-port publishing still works alongside it
-
 ## v0.1.0 — 2026-09-01
 
 Első release.
