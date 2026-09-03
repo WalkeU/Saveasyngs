@@ -17,9 +17,24 @@ services:
       dockerfile: docker/prod/caddy.Dockerfile
     ports:
       - "${HTTP_PORT}:80"
+    networks:
+      - default
+      - proxy
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
   backend-prod-data:
+
+networks:
+  default: {}
+  # external network shared with your reverse-proxy stack (Traefik,
+  # nginx-proxy-manager, another Caddy, ...). Create it once with
+  # `docker network create <name>` — or reuse whatever network your proxy
+  # setup already created — then point the proxy at container "caddy",
+  # port 80, on that network. Override the name via PROXY_NETWORK in .env
+  # if your setup doesn't use the default "proxy".
+  proxy:
+    name: ${PROXY_NETWORK:-proxy}
+    external: true

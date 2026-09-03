@@ -23,6 +23,22 @@ docker compose -f docker-compose.prod.yml down
 
 A portok a `.env` fájlban állíthatók (lásd [`.env.example`](./.env.example) — a `.env` maga nincs verziózva, csak sablon).
 
+## Reverse proxy mögé rakás (prod)
+
+A prod Caddy egy külső Docker hálózaton is elérhető (`proxy` néven alapból,
+`.env`-ben `PROXY_NETWORK`-kel átnevezhető), amin a saját reverse proxyd
+(Traefik, nginx-proxy-manager, egy másik Caddy, stb.) közvetlenül eléri
+konténernév alapján — nem kell hozzá a `HTTP_PORT`-ot használnia.
+
+Egyszeri lépés, mielőtt először elindítod a prod stacket:
+
+docker network create proxy
+
+Utána a reverse proxy konfigjában a célpont: `caddy`, `80`-as port, ezen a
+hálózaton (nem `localhost:$HTTP_PORT`). A `HTTP_PORT` publikálás megmarad
+is emellett, úgyhogy közvetlen LAN-elérés is működik, ha arra is szükség
+van — ha nem, csak ne nyisd meg azt a portot kifelé a tűzfalon.
+
 ## Mi ez?
 
 Egyszerű, önhostolt személyes pénzügyi alkalmazás: költések rögzítése és
