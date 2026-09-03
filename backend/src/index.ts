@@ -11,6 +11,7 @@ import { configRoutes } from "./routes/config.js";
 import { networthRoutes } from "./routes/networth.js";
 import { recurringRoutes } from "./routes/recurring.js";
 import { bucketRoutes } from "./routes/buckets.js";
+import { settingsRoutes } from "./routes/settings.js";
 
 const app = Fastify({ logger: true });
 
@@ -26,6 +27,7 @@ await app.register(configRoutes);
 await app.register(networthRoutes);
 await app.register(recurringRoutes);
 await app.register(bucketRoutes);
+await app.register(settingsRoutes);
 
 // off by default: a one-off backfill tool for a specific legacy export,
 // not part of the normal product surface

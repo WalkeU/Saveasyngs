@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { evaluateAmountExpression, formatDate, formatMoney, toLocalDateInput } from "../format";
+import { evaluateAmountExpression, formatDate, formatMoney, roundMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTag, IconTrash } from "../icons";
 import type { Category, CategoryRule, SavingsBucket, Transaction, TransactionType } from "../types";
 
@@ -85,8 +85,8 @@ export function Transactions() {
 
   async function handleAmountChange(transaction: Transaction, input: HTMLInputElement) {
     const next = evaluateAmountExpression(input.value);
-    if (next === null || next === transaction.amount) {
-      input.value = String(transaction.amount);
+    if (next === null || next === roundMoney(transaction.amount)) {
+      input.value = String(roundMoney(transaction.amount));
       return;
     }
     const updated = await api.transactions.update(transaction.id, { amount: next });
@@ -286,10 +286,10 @@ export function Transactions() {
                   <td className={`tabular amount-${row.type}`} style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     {row.type === "expense" ? "−" : row.type === "income" ? "+" : "⇄"}
                     <input
-                      key={row.amount}
+                      key={roundMoney(row.amount)}
                       type="text"
                       inputMode="decimal"
-                      defaultValue={row.amount}
+                      defaultValue={roundMoney(row.amount)}
                       onBlur={(e) => handleAmountChange(row, e.target)}
                       onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                       className="tabular inline-amount-input"

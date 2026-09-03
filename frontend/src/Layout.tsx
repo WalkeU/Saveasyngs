@@ -1,5 +1,14 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { IconGrid, IconList, IconPiggyBank, IconRepeat, IconTag, IconUpload, IconWand } from "./icons";
+import {
+  IconGrid,
+  IconList,
+  IconPiggyBank,
+  IconRepeat,
+  IconSettings,
+  IconTag,
+  IconUpload,
+  IconWand,
+} from "./icons";
 
 const NAV = [
   { to: "/", label: "Áttekintés", icon: IconGrid, end: true },
@@ -9,6 +18,7 @@ const NAV = [
   { to: "/import", label: "Import", icon: IconUpload },
   { to: "/kategoriak", label: "Kategóriák", icon: IconTag },
   { to: "/szabalyok", label: "Szabályok", icon: IconWand },
+  { to: "/beallitasok", label: "Beállítások", icon: IconSettings },
 ];
 
 export function Layout() {

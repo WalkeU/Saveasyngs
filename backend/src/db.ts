@@ -68,6 +68,8 @@ try {
   // column already exists
 }
 
+db.exec("INSERT OR IGNORE INTO app_settings (id, decimal_places) VALUES (1, 0)");
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;

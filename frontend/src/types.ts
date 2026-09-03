@@ -151,6 +151,10 @@ export interface NetWorth {
   netWorth: number;
 }
 
+export interface AppSettings {
+  decimalPlaces: number;
+}
+
 export interface LegacyImportResult {
   total: number;
   applied: number;

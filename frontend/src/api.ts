@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   Category,
   CategoryRule,
   CategoryType,
@@ -145,6 +146,11 @@ export const api = {
   },
   config: {
     get: () => request<{ legacyCategoryImport: boolean }>("/api/config"),
+  },
+  settings: {
+    get: () => request<AppSettings>("/api/settings"),
+    update: (decimalPlaces: number) =>
+      request<AppSettings>("/api/settings", { method: "PATCH", body: JSON.stringify({ decimalPlaces }) }),
   },
   networth: {
     get: () => request<NetWorth>("/api/networth"),

@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS liquid_override (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- app-wide display settings; single row. decimal_places controls how many
+-- fraction digits money amounts are rounded/displayed to (forints have
+-- none by default, but a bucket tracking e.g. crypto might want some)
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  decimal_places INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- one-time data migrations, tracked by name so each runs at most once
 CREATE TABLE IF NOT EXISTS _migrations (
   name TEXT PRIMARY KEY,

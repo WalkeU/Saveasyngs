@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { formatMoney, toLocalDateInput } from "../format";
+import { formatMoney, roundMoney, toLocalDateInput } from "../format";
 import { CategoryIcon } from "../IconPicker";
 import { IconPlus, IconRepeat, IconTrash } from "../icons";
 import type { NetWorth, SavingsBucket } from "../types";
@@ -94,12 +94,12 @@ export function Savings() {
                       </span>
                     )}
                     <input
-                      key={total}
+                      key={roundMoney(total)}
                       type="number"
-                      defaultValue={total}
+                      defaultValue={roundMoney(total)}
                       onBlur={(e) => {
-                        const next = Number(e.target.value);
-                        if (!Number.isNaN(next) && next !== total) revalueBucket(b.id, next);
+                        const next = roundMoney(Number(e.target.value));
+                        if (!Number.isNaN(next) && next !== roundMoney(total)) revalueBucket(b.id, next);
                       }}
                       className="tabular"
                       style={{ width: 130, textAlign: "right", fontSize: 13.5 }}
@@ -240,12 +240,12 @@ function LiquidCard({ data, onSet }: { data: NetWorth; onSet: (value: number | n
         )}
       </div>
       <input
-        key={data.liquid}
+        key={roundMoney(data.liquid)}
         type="number"
-        defaultValue={data.liquid}
+        defaultValue={roundMoney(data.liquid)}
         onBlur={(e) => {
-          const next = Number(e.target.value);
-          if (!Number.isNaN(next) && next !== data.liquid) onSet(next);
+          const next = roundMoney(Number(e.target.value));
+          if (!Number.isNaN(next) && next !== roundMoney(data.liquid)) onSet(next);
         }}
         className="tabular"
         style={{
@@ -260,7 +260,7 @@ function LiquidCard({ data, onSet }: { data: NetWorth; onSet: (value: number | n
         title={
           data.liquidIsManual
             ? "Kézzel beállított érték — kattints és írd át, vagy állítsd vissza az automatikus számolásra"
-            : `Kattints és írd át, ha eltér a valóstól (a számolt érték: ${data.liquidCalculated})`
+            : `Kattints és írd át, ha eltér a valóstól (a számolt érték: ${roundMoney(data.liquidCalculated)})`
         }
       />
     </div>

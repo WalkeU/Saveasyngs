@@ -24,14 +24,33 @@ export function formatMonthLabel(month: string): string {
   );
 }
 
-const money = new Intl.NumberFormat("hu-HU", {
-  style: "currency",
-  currency: "HUF",
-  maximumFractionDigits: 0,
-});
+// how many fraction digits money amounts round/display to; forints have
+// none by default, configurable on Beállítások (see AppSettings)
+let decimalPlaces = 0;
+
+export function setDecimalPlaces(n: number): void {
+  decimalPlaces = n;
+}
+
+export function getDecimalPlaces(): number {
+  return decimalPlaces;
+}
+
+// rounds to the configured decimal precision, half rounding up (never
+// banker's rounding) — mainly to clean up floating-point noise from summed
+// amounts (e.g. 235437.5700000003) before it ever reaches the screen
+export function roundMoney(amount: number, decimals: number = decimalPlaces): number {
+  const factor = 10 ** decimals;
+  return Math.round(amount * factor) / factor;
+}
 
 export function formatMoney(amount: number): string {
-  return money.format(amount);
+  return new Intl.NumberFormat("hu-HU", {
+    style: "currency",
+    currency: "HUF",
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  }).format(roundMoney(amount));
 }
 
 // lets an amount field accept e.g. "31000-3000" typed after the existing
@@ -44,7 +63,7 @@ export function evaluateAmountExpression(input: string): number | null {
   try {
     const result = Function(`"use strict"; return (${trimmed});`)() as unknown;
     if (typeof result !== "number" || !Number.isFinite(result) || result === 0) return null;
-    return Math.abs(result);
+    return roundMoney(Math.abs(result));
   } catch {
     return null;
   }
