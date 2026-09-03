@@ -45,7 +45,9 @@ export async function transactionRoutes(app: FastifyInstance) {
       params.push(type);
     }
     if (categoryId === "none") {
-      where.push("category_id IS NULL");
+      where.push(
+        "((transactions.type = 'savings' AND transactions.bucket_id IS NULL) OR (transactions.type != 'savings' AND transactions.category_id IS NULL))",
+      );
     } else if (categoryId) {
       where.push("category_id = ?");
       params.push(Number(categoryId));

@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- fixed the "Kategorizálatlan" filter always showing savings transfers as uncategorized — they don't use category_id (they use bucket_id instead), so the filter now checks bucket_id for savings and category_id for everything else
 - rule creation suggestion is now a small tag-icon button next to the category dropdown that opens a compact popover — no more full-width banner pinned to the top of the page forcing a scroll
 - hovering a transaction's date in the Tranzakciók list now shows a tooltip with when the row was recorded ("Importálva" for imports, "Rögzítve" for manual entries) — not labeled as the transaction's own time, since only a date (no time-of-day) is stored for that
 - creating a category rule (manually or via the "learn this pattern" suggestion) now also applies retroactively to existing, still-uncategorized transactions matching the pattern — not just future imports
