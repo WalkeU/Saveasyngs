@@ -5,6 +5,7 @@ import type { Transaction, TransactionType } from "../types.js";
 interface ListQuery {
   type?: TransactionType;
   categoryId?: string;
+  bucketId?: string;
   q?: string;
   from?: string;
   to?: string;
@@ -17,6 +18,7 @@ interface CreateBody {
   amount: number;
   description?: string;
   categoryId?: number | null;
+  bucketId?: number | null;
   date: string;
 }
 
@@ -25,12 +27,13 @@ interface UpdateBody {
   amount?: number;
   description?: string;
   categoryId?: number | null;
+  bucketId?: number | null;
   date?: string;
 }
 
 export async function transactionRoutes(app: FastifyInstance) {
   app.get<{ Querystring: ListQuery }>("/api/transactions", async (req) => {
-    const { type, categoryId, q, from, to } = req.query;
+    const { type, categoryId, bucketId, q, from, to } = req.query;
     const limit = Math.min(Number(req.query.limit ?? 100), 500);
     const offset = Number(req.query.offset ?? 0);
 
@@ -46,6 +49,10 @@ export async function transactionRoutes(app: FastifyInstance) {
     } else if (categoryId) {
       where.push("category_id = ?");
       params.push(Number(categoryId));
+    }
+    if (bucketId) {
+      where.push("bucket_id = ?");
+      params.push(Number(bucketId));
     }
     if (q) {
       where.push("description LIKE ? COLLATE NOCASE");
@@ -63,9 +70,12 @@ export async function transactionRoutes(app: FastifyInstance) {
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
     const rows = db
       .prepare(
-        `SELECT transactions.*, categories.name AS category_name, categories.color AS category_color
+        `SELECT transactions.*,
+                categories.name AS category_name, categories.color AS category_color,
+                buckets.name AS bucket_name, buckets.color AS bucket_color, buckets.icon AS bucket_icon
          FROM transactions
          LEFT JOIN categories ON categories.id = transactions.category_id
+         LEFT JOIN savings_buckets buckets ON buckets.id = transactions.bucket_id
          ${whereSql}
          ORDER BY date DESC, transactions.id DESC
          LIMIT ? OFFSET ?`,
@@ -81,16 +91,20 @@ export async function transactionRoutes(app: FastifyInstance) {
   });
 
   app.post<{ Body: CreateBody }>("/api/transactions", async (req, reply) => {
-    const { type, amount, description, categoryId, date } = req.body;
+    const { type, amount, description, date } = req.body;
     if ((type !== "expense" && type !== "income" && type !== "savings") || !amount || amount <= 0 || !date) {
       return reply.code(400).send({ error: "type, positive amount and date are required" });
     }
+    const isSavings = type === "savings";
+    const categoryId = isSavings ? null : req.body.categoryId ?? null;
+    const bucketId = isSavings ? req.body.bucketId ?? null : null;
+
     const result = db
       .prepare(
-        `INSERT INTO transactions (type, amount, description, category_id, date, source)
-         VALUES (?, ?, ?, ?, ?, 'manual')`,
+        `INSERT INTO transactions (type, amount, description, category_id, bucket_id, date, source)
+         VALUES (?, ?, ?, ?, ?, ?, 'manual')`,
       )
-      .run(type, amount, description?.trim() ?? "", categoryId ?? null, date);
+      .run(type, amount, description?.trim() ?? "", categoryId, bucketId, date);
     const transaction = db
       .prepare("SELECT * FROM transactions WHERE id = ?")
       .get(result.lastInsertRowid) as Transaction;
@@ -109,13 +123,23 @@ export async function transactionRoutes(app: FastifyInstance) {
       const type = req.body.type ?? existing.type;
       const amount = req.body.amount ?? existing.amount;
       const description = req.body.description?.trim() ?? existing.description;
-      const categoryId =
-        req.body.categoryId !== undefined ? req.body.categoryId : existing.category_id;
       const date = req.body.date ?? existing.date;
 
+      const isSavings = type === "savings";
+      const categoryId = isSavings
+        ? null
+        : req.body.categoryId !== undefined
+          ? req.body.categoryId
+          : existing.category_id;
+      const bucketId = isSavings
+        ? req.body.bucketId !== undefined
+          ? req.body.bucketId
+          : existing.bucket_id
+        : null;
+
       db.prepare(
-        "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, date = ? WHERE id = ?",
-      ).run(type, amount, description, categoryId, date, id);
+        "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, bucket_id = ?, date = ? WHERE id = ?",
+      ).run(type, amount, description, categoryId, bucketId, date, id);
       return db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as Transaction;
     },
   );

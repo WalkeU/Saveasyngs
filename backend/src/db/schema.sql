@@ -1,12 +1,24 @@
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
   color TEXT,
   icon TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (name, type)
+);
+
+-- savings/investment destinations (e.g. "ETH", "Részvényszámla"), fully
+-- independent of categories — a 'savings' transaction points here via
+-- bucket_id instead of category_id
+CREATE TABLE IF NOT EXISTS savings_buckets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT,
+  icon TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- one-time data migrations, tracked by name so each runs at most once
@@ -17,12 +29,13 @@ CREATE TABLE IF NOT EXISTS _migrations (
 
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  -- 'savings' = money moved from liquid cash into a savings/investment
-  -- bucket (a type='savings' category) rather than actually spent
+  -- 'savings' = money moved from liquid cash into a savings_buckets row
+  -- rather than actually spent; such rows use bucket_id, not category_id
   type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
   amount REAL NOT NULL CHECK (amount > 0),
   description TEXT NOT NULL DEFAULT '',
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL,
   date TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'import')),
   -- hash of (date|type|amount|description), used to silently skip re-imported rows
@@ -35,6 +48,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_import_hash
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+-- idx_transactions_bucket is created in db.ts, after the bucket_id column
+-- is guaranteed to exist (ALTER TABLE for pre-existing databases runs
+-- after this schema exec, so the column may not exist yet here)
 
 CREATE TABLE IF NOT EXISTS category_rules (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +85,7 @@ CREATE TABLE IF NOT EXISTS recurring_payments (
   amount REAL NOT NULL CHECK (amount > 0),
   description TEXT NOT NULL DEFAULT '',
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL,
   day_of_month INTEGER NOT NULL CHECK (day_of_month BETWEEN 1 AND 31),
   enabled INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

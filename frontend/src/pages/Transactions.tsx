@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatDate, formatMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTrash } from "../icons";
-import type { Category, Transaction, TransactionType } from "../types";
+import type { Category, SavingsBucket, Transaction, TransactionType } from "../types";
 
 const today = () => toLocalDateInput(new Date());
 
@@ -10,6 +10,7 @@ export function Transactions() {
   const [rows, setRows] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [buckets, setBuckets] = useState<SavingsBucket[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [type, setType] = useState<TransactionType | "">("");
@@ -24,6 +25,7 @@ export function Transactions() {
 
   useEffect(() => {
     api.categories.list().then(setCategories);
+    api.buckets.list().then(setBuckets);
   }, []);
 
   useEffect(() => {
@@ -58,13 +60,19 @@ export function Transactions() {
       const updated = await api.transactions.update(transaction.id, {
         type: "expense",
         categoryId: null,
+        bucketId: null,
       });
       setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
       return;
     }
-    if (value.startsWith("savings:")) {
-      const categoryId = Number(value.slice("savings:".length));
-      const updated = await api.transactions.update(transaction.id, { type: "savings", categoryId });
+    if (value.startsWith("bucket:")) {
+      const bucketId = Number(value.slice("bucket:".length));
+      const updated = await api.transactions.update(transaction.id, { type: "savings", bucketId });
+      setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
+      return;
+    }
+    if (transaction.type === "savings") {
+      const updated = await api.transactions.update(transaction.id, { bucketId: null });
       setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
       return;
     }
@@ -101,6 +109,7 @@ export function Transactions() {
       {showAdd && (
         <AddForm
           categories={categories}
+          buckets={buckets}
           onCreated={(t) => {
             setRows((prev) => [t, ...prev]);
             setTotal((n) => n + 1);
@@ -181,34 +190,45 @@ export function Transactions() {
                   <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}>{formatDate(row.date)}</td>
                   <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
                   <td>
-                    <select
-                      value={row.category_id ?? ""}
-                      onChange={(e) => handleCategorySelect(row, e.target.value)}
-                      style={{ fontSize: 12.5, padding: "4px 8px" }}
-                    >
-                      <option value="">Nincs kategória</option>
-                      {categories
-                        .filter((c) => c.type === row.type)
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
+                    {row.type === "savings" ? (
+                      <select
+                        value={row.bucket_id ? `bucket:${row.bucket_id}` : ""}
+                        onChange={(e) => handleCategorySelect(row, e.target.value)}
+                        style={{ fontSize: 12.5, padding: "4px 8px" }}
+                      >
+                        <option value="">Nincs megtakarítási hely</option>
+                        {buckets.map((b) => (
+                          <option key={b.id} value={`bucket:${b.id}`}>
+                            {b.name}
                           </option>
                         ))}
-                      {row.type !== "savings" && categories.some((c) => c.type === "savings") && (
-                        <optgroup label="Megtakarításnak jelölés">
-                          {categories
-                            .filter((c) => c.type === "savings")
-                            .map((c) => (
-                              <option key={`s-${c.id}`} value={`savings:${c.id}`}>
-                                {c.name}
+                        <option value="__revert__">« vissza kiadásnak</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={row.category_id ?? ""}
+                        onChange={(e) => handleCategorySelect(row, e.target.value)}
+                        style={{ fontSize: 12.5, padding: "4px 8px" }}
+                      >
+                        <option value="">Nincs kategória</option>
+                        {categories
+                          .filter((c) => c.type === row.type)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        {buckets.length > 0 && (
+                          <optgroup label="Megtakarításnak jelölés">
+                            {buckets.map((b) => (
+                              <option key={`b-${b.id}`} value={`bucket:${b.id}`}>
+                                {b.name}
                               </option>
                             ))}
-                        </optgroup>
-                      )}
-                      {row.type === "savings" && (
-                        <option value="__revert__">« vissza kiadásnak</option>
-                      )}
-                    </select>
+                          </optgroup>
+                        )}
+                      </select>
+                    )}
                   </td>
                   <td className={`tabular amount-${row.type}`} style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     {row.type === "expense" ? "−" : row.type === "income" ? "+" : "⇄"}
@@ -231,10 +251,12 @@ export function Transactions() {
 
 function AddForm({
   categories,
+  buckets,
   onCreated,
   onCancel,
 }: {
   categories: Category[];
+  buckets: SavingsBucket[];
   onCreated: (t: Transaction) => void;
   onCancel: () => void;
 }) {
@@ -242,6 +264,7 @@ function AddForm({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [bucketId, setBucketId] = useState("");
   const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
 
@@ -254,10 +277,11 @@ function AddForm({
         type,
         amount: Number(amount),
         description,
-        categoryId: categoryId ? Number(categoryId) : null,
+        categoryId: type === "savings" ? null : categoryId ? Number(categoryId) : null,
+        bucketId: type === "savings" ? (bucketId ? Number(bucketId) : null) : null,
         date,
       });
-      onCreated({ ...created, category_name: null, category_color: null } as Transaction);
+      onCreated({ ...created, category_name: null, category_color: null, bucket_name: null, bucket_color: null, bucket_icon: null } as Transaction);
     } finally {
       setSaving(false);
     }
@@ -281,19 +305,33 @@ function AddForm({
         <label>Leírás</label>
         <input value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
-      <div className="field">
-        <label>Kategória</label>
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-          <option value="">Nincs</option>
-          {categories
-            .filter((c) => c.type === type)
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+      {type === "savings" ? (
+        <div className="field">
+          <label>Megtakarítási hely</label>
+          <select value={bucketId} onChange={(e) => setBucketId(e.target.value)}>
+            <option value="">Nincs</option>
+            {buckets.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
               </option>
             ))}
-        </select>
-      </div>
+          </select>
+        </div>
+      ) : (
+        <div className="field">
+          <label>Kategória</label>
+          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">Nincs</option>
+            {categories
+              .filter((c) => c.type === type)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      )}
       <div className="field">
         <label>Dátum</label>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />

@@ -3,11 +3,12 @@ import { api } from "../api";
 import { formatMoney, formatMonthLabel, monthKey, shiftMonthKey, toLocalDateInput } from "../format";
 import { CategoryIcon } from "../IconPicker";
 import { IconChevronLeft, IconChevronRight, IconPlus, IconTrash } from "../icons";
-import type { Category, MissingRecurring, RecurringPayment, Transaction, TransactionType } from "../types";
+import type { Category, MissingRecurring, RecurringPayment, SavingsBucket, Transaction, TransactionType } from "../types";
 
 export function Recurring() {
   const [items, setItems] = useState<RecurringPayment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [buckets, setBuckets] = useState<SavingsBucket[]>([]);
   const [missingMonth, setMissingMonth] = useState(monthKey());
   const [missing, setMissing] = useState<MissingRecurring | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -18,6 +19,7 @@ export function Recurring() {
   useEffect(() => {
     load();
     api.categories.list().then(setCategories);
+    api.buckets.list().then(setBuckets);
   }, []);
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export function Recurring() {
       amount: item.amount,
       description: item.description,
       categoryId: item.category_id,
+      bucketId: item.bucket_id,
       date: toLocalDateInput(new Date()),
     });
     loadMissing();
@@ -60,6 +63,7 @@ export function Recurring() {
       {showAdd && (
         <AddForm
           categories={categories}
+          buckets={buckets}
           onCreated={(item) => {
             setItems((prev) => [...prev, item]);
             setShowAdd(false);
@@ -101,9 +105,9 @@ export function Recurring() {
                 className="banner"
                 style={{ background: "var(--warn-soft)", borderColor: "var(--warn)", color: "var(--ink)" }}
               >
-                <CategoryIcon icon={item.category_icon} color={item.category_color ?? undefined} />
+                <CategoryIcon icon={item.category_icon ?? item.bucket_icon} color={(item.category_color ?? item.bucket_color) ?? undefined} />
                 <span style={{ flex: 1 }}>
-                  <strong>{item.description || item.category_name}</strong>
+                  <strong>{item.description || item.category_name || item.bucket_name}</strong>
                   <span style={{ color: "var(--ink-faint)", marginLeft: 6 }}>
                     minden hó {item.day_of_month}. napján
                   </span>
@@ -140,8 +144,8 @@ export function Recurring() {
                   <td>{item.description || "—"}</td>
                   <td>
                     <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <CategoryIcon icon={item.category_icon} color={item.category_color ?? undefined} />
-                      {item.category_name ?? "—"}
+                      <CategoryIcon icon={item.category_icon ?? item.bucket_icon} color={(item.category_color ?? item.bucket_color) ?? undefined} />
+                      {item.category_name ?? item.bucket_name ?? "—"}
                     </span>
                   </td>
                   <td>
@@ -175,10 +179,12 @@ export function Recurring() {
 
 function AddForm({
   categories,
+  buckets,
   onCreated,
   onCancel,
 }: {
   categories: Category[];
+  buckets: SavingsBucket[];
   onCreated: (item: RecurringPayment) => void;
   onCancel: () => void;
 }) {
@@ -186,6 +192,7 @@ function AddForm({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [bucketId, setBucketId] = useState("");
   const [dayOfMonth, setDayOfMonth] = useState("1");
   const [saving, setSaving] = useState(false);
 
@@ -203,6 +210,7 @@ function AddForm({
     setAmount(String(t.amount));
     setDescription(t.description);
     setCategoryId(t.category_id ? String(t.category_id) : "");
+    setBucketId(t.bucket_id ? String(t.bucket_id) : "");
     setDayOfMonth(String(new Date(t.date).getDate()));
     setPickerOpen(false);
   }
@@ -216,7 +224,8 @@ function AddForm({
         type,
         amount: Number(amount),
         description,
-        categoryId: categoryId ? Number(categoryId) : null,
+        categoryId: type === "savings" ? null : categoryId ? Number(categoryId) : null,
+        bucketId: type === "savings" ? (bucketId ? Number(bucketId) : null) : null,
         dayOfMonth: Number(dayOfMonth),
       });
       onCreated(created);
@@ -278,19 +287,33 @@ function AddForm({
           <label>Leírás</label>
           <input value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
-        <div className="field">
-          <label>Kategória</label>
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Nincs</option>
-            {categories
-              .filter((c) => c.type === type)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
+        {type === "savings" ? (
+          <div className="field">
+            <label>Megtakarítási hely</label>
+            <select value={bucketId} onChange={(e) => setBucketId(e.target.value)}>
+              <option value="">Nincs</option>
+              {buckets.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
               ))}
-          </select>
-        </div>
+            </select>
+          </div>
+        ) : (
+          <div className="field">
+            <label>Kategória</label>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">Nincs</option>
+              {categories
+                .filter((c) => c.type === type)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
         <div className="field">
           <label>Nap (hónapban)</label>
           <input

@@ -1,6 +1,7 @@
 import type {
   Category,
   CategoryRule,
+  CategoryType,
   ImportPreview,
   ImportResult,
   LegacyImportResult,
@@ -11,6 +12,7 @@ import type {
   RecurringPayment,
   ReportByCategory,
   ReportSummary,
+  SavingsBucket,
   Transaction,
   TransactionType,
 } from "./types";
@@ -32,9 +34,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   categories: {
-    list: (type?: TransactionType) =>
+    list: (type?: CategoryType) =>
       request<Category[]>(`/api/categories${type ? `?type=${type}` : ""}`),
-    create: (data: { name: string; type: TransactionType; color?: string; icon?: string }) =>
+    create: (data: { name: string; type: CategoryType; color?: string; icon?: string }) =>
       request<Category>("/api/categories", { method: "POST", body: JSON.stringify(data) }),
     update: (id: number, data: { name?: string; color?: string; icon?: string }) =>
       request<Category>(`/api/categories/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
@@ -61,6 +63,7 @@ export const api = {
       amount: number;
       description?: string;
       categoryId?: number | null;
+      bucketId?: number | null;
       date: string;
     }) => request<Transaction>("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
     update: (
@@ -70,6 +73,7 @@ export const api = {
         amount: number;
         description: string;
         categoryId: number | null;
+        bucketId: number | null;
         date: string;
       }>,
     ) =>
@@ -145,6 +149,14 @@ export const api = {
   networth: {
     get: () => request<NetWorth>("/api/networth"),
   },
+  buckets: {
+    list: () => request<SavingsBucket[]>("/api/buckets"),
+    create: (data: { name: string; color?: string; icon?: string }) =>
+      request<SavingsBucket>("/api/buckets", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: Partial<{ name: string; color: string; icon: string }>) =>
+      request<SavingsBucket>(`/api/buckets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) => request<void>(`/api/buckets/${id}`, { method: "DELETE" }),
+  },
   recurring: {
     list: () => request<RecurringPayment[]>("/api/recurring"),
     missing: (month?: string) =>
@@ -154,6 +166,7 @@ export const api = {
       amount: number;
       description?: string;
       categoryId?: number | null;
+      bucketId?: number | null;
       dayOfMonth: number;
     }) => request<RecurringPayment>("/api/recurring", { method: "POST", body: JSON.stringify(data) }),
     update: (
@@ -163,6 +176,7 @@ export const api = {
         amount: number;
         description: string;
         categoryId: number | null;
+        bucketId: number | null;
         dayOfMonth: number;
         enabled: boolean;
       }>,

@@ -1,9 +1,19 @@
 export type TransactionType = "expense" | "income" | "savings";
+export type CategoryType = "expense" | "income";
 
 export interface Category {
   id: number;
   name: string;
-  type: TransactionType;
+  type: CategoryType;
+  color: string | null;
+  icon: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SavingsBucket {
+  id: number;
+  name: string;
   color: string | null;
   icon: string | null;
   sort_order: number;
@@ -18,6 +28,10 @@ export interface Transaction {
   category_id: number | null;
   category_name: string | null;
   category_color: string | null;
+  bucket_id: number | null;
+  bucket_name: string | null;
+  bucket_color: string | null;
+  bucket_icon: string | null;
   date: string;
   source: "manual" | "import";
   created_at: string;
@@ -103,6 +117,10 @@ export interface RecurringPayment {
   category_name: string | null;
   category_color: string | null;
   category_icon: string | null;
+  bucket_id: number | null;
+  bucket_name: string | null;
+  bucket_color: string | null;
+  bucket_icon: string | null;
   day_of_month: number;
   enabled: 0 | 1;
   created_at: string;
@@ -114,10 +132,10 @@ export interface MissingRecurring {
 }
 
 export interface NetWorthBucket {
-  category_id: number;
-  category_name: string;
-  category_color: string | null;
-  category_icon: string | null;
+  bucket_id: number;
+  bucket_name: string;
+  bucket_color: string | null;
+  bucket_icon: string | null;
   total: number;
 }
 

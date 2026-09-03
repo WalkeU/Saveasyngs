@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { IconChevronDown, IconChevronUp, IconLanguage, IconPalette, IconPlus, IconReset, IconTrash } from "../icons";
 import { IconPicker } from "../IconPicker";
-import type { Category, TransactionType } from "../types";
+import type { Category, CategoryType } from "../types";
 
 const EN_TRANSLATIONS: Record<string, string> = {
   Étkezés: "Food",
@@ -82,7 +82,7 @@ export function Categories() {
       <div className="page-header">
         <div>
           <h1>Kategóriák</h1>
-          <div className="page-sub">Kiadás, bevétel és megtakarítási kategóriák kezelése</div>
+          <div className="page-sub">Kiadás és bevétel kategóriák kezelése — a megtakarítás (buckets) külön, a Megtakarítás oldalon</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn" onClick={translateToEnglish}>
@@ -97,7 +97,7 @@ export function Categories() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <CategoryGroup
           title="Kiadás"
           type="expense"
@@ -113,17 +113,6 @@ export function Categories() {
           title="Bevétel"
           type="income"
           categories={categories.filter((c) => c.type === "income")}
-          onCreated={(c) => setCategories((prev) => [...prev, c])}
-          onRename={rename}
-          onRecolor={recolor}
-          onReicon={reicon}
-          onDelete={remove}
-          onMove={move}
-        />
-        <CategoryGroup
-          title="Megtakarítás"
-          type="savings"
-          categories={categories.filter((c) => c.type === "savings")}
           onCreated={(c) => setCategories((prev) => [...prev, c])}
           onRename={rename}
           onRecolor={recolor}
@@ -148,7 +137,7 @@ function CategoryGroup({
   onMove,
 }: {
   title: string;
-  type: TransactionType;
+  type: CategoryType;
   categories: Category[];
   onCreated: (c: Category) => void;
   onRename: (id: number, name: string) => void;

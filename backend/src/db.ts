@@ -35,6 +35,21 @@ try {
   // column already exists
 }
 
+try {
+  db.exec("ALTER TABLE transactions ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
+} catch {
+  // column already exists
+}
+
+try {
+  db.exec("ALTER TABLE recurring_payments ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
+} catch {
+  // column already exists
+}
+
+// safe to run every startup: the column above is now guaranteed to exist
+db.exec("CREATE INDEX IF NOT EXISTS idx_transactions_bucket ON transactions(bucket_id)");
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;
@@ -115,6 +130,67 @@ migrate("2026-09-category-icons", () => {
         DROP TABLE IF EXISTS savings_goals;
       `);
       db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-type-widen");
+    })();
+    db.pragma("foreign_keys = ON");
+  }
+}
+
+// splits savings out of the category system entirely: every type='savings'
+// category becomes a savings_buckets row (by name), transactions and
+// recurring_payments pointing at it get repointed via bucket_id instead of
+// category_id, then categories.type is narrowed back to expense/income only
+// (another table rebuild, since SQLite can't shrink a CHECK constraint)
+{
+  const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-buckets-split");
+  if (!applied) {
+    db.pragma("foreign_keys = OFF");
+    db.transaction(() => {
+      const savingsCategories = db.prepare("SELECT * FROM categories WHERE type = 'savings'").all() as {
+        id: number;
+        name: string;
+        color: string | null;
+        icon: string | null;
+        sort_order: number;
+      }[];
+
+      const insertBucket = db.prepare(
+        "INSERT OR IGNORE INTO savings_buckets (name, color, icon, sort_order) VALUES (?, ?, ?, ?)",
+      );
+      const findBucketId = db.prepare("SELECT id FROM savings_buckets WHERE name = ?");
+      const repointTransactions = db.prepare(
+        "UPDATE transactions SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
+      );
+      const repointRecurring = db.prepare(
+        "UPDATE recurring_payments SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
+      );
+
+      for (const category of savingsCategories) {
+        insertBucket.run(category.name, category.color, category.icon, category.sort_order);
+        const bucket = findBucketId.get(category.name) as { id: number };
+        repointTransactions.run(bucket.id, category.id);
+        repointRecurring.run(bucket.id, category.id);
+      }
+
+      db.exec(`
+        DELETE FROM categories WHERE type = 'savings';
+
+        CREATE TABLE categories_new2 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
+          color TEXT,
+          icon TEXT,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE (name, type)
+        );
+        INSERT INTO categories_new2 (id, name, type, color, icon, sort_order, created_at)
+          SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
+        DROP TABLE categories;
+        ALTER TABLE categories_new2 RENAME TO categories;
+      `);
+
+      db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-buckets-split");
     })();
     db.pragma("foreign_keys = ON");
   }

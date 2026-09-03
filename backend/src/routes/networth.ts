@@ -15,22 +15,22 @@ export async function networthRoutes(app: FastifyInstance) {
     const buckets = db
       .prepare(
         `SELECT
-           categories.id AS category_id,
-           categories.name AS category_name,
-           categories.color AS category_color,
-           categories.icon AS category_icon,
+           savings_buckets.id AS bucket_id,
+           savings_buckets.name AS bucket_name,
+           savings_buckets.color AS bucket_color,
+           savings_buckets.icon AS bucket_icon,
            SUM(transactions.amount) AS total
          FROM transactions
-         JOIN categories ON categories.id = transactions.category_id
+         JOIN savings_buckets ON savings_buckets.id = transactions.bucket_id
          WHERE transactions.type = 'savings'
-         GROUP BY categories.id
+         GROUP BY savings_buckets.id
          ORDER BY total DESC`,
       )
       .all() as {
-      category_id: number;
-      category_name: string;
-      category_color: string | null;
-      category_icon: string | null;
+      bucket_id: number;
+      bucket_name: string;
+      bucket_color: string | null;
+      bucket_icon: string | null;
       total: number;
     }[];
 

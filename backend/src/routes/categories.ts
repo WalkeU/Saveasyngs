@@ -2,11 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
 import { defaultCategories } from "../default-categories.js";
 import { PALETTE } from "../palette.js";
-import type { Category, TransactionType } from "../types.js";
+import type { Category, CategoryType } from "../types.js";
 
 interface CreateCategoryBody {
   name: string;
-  type: TransactionType;
+  type: CategoryType;
   color?: string;
   icon?: string;
 }
@@ -22,7 +22,7 @@ interface MoveBody {
 }
 
 export async function categoryRoutes(app: FastifyInstance) {
-  app.get<{ Querystring: { type?: TransactionType } }>("/api/categories", async (req) => {
+  app.get<{ Querystring: { type?: CategoryType } }>("/api/categories", async (req) => {
     const { type } = req.query;
     if (type) {
       return db
@@ -36,7 +36,7 @@ export async function categoryRoutes(app: FastifyInstance) {
 
   app.post<{ Body: CreateCategoryBody }>("/api/categories", async (req, reply) => {
     const { name, type, color, icon } = req.body;
-    if (!name?.trim() || (type !== "expense" && type !== "income" && type !== "savings")) {
+    if (!name?.trim() || (type !== "expense" && type !== "income")) {
       return reply.code(400).send({ error: "name and a valid type are required" });
     }
     try {

@@ -1,9 +1,19 @@
 export type TransactionType = "expense" | "income" | "savings";
+export type CategoryType = "expense" | "income";
 
 export interface Category {
   id: number;
   name: string;
-  type: TransactionType;
+  type: CategoryType;
+  color: string | null;
+  icon: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SavingsBucket {
+  id: number;
+  name: string;
   color: string | null;
   icon: string | null;
   sort_order: number;
@@ -16,6 +26,7 @@ export interface Transaction {
   amount: number;
   description: string;
   category_id: number | null;
+  bucket_id: number | null;
   date: string;
   source: "manual" | "import";
   import_hash: string | null;
@@ -47,6 +58,7 @@ export interface RecurringPayment {
   amount: number;
   description: string;
   category_id: number | null;
+  bucket_id: number | null;
   day_of_month: number;
   enabled: 0 | 1;
   created_at: string;
