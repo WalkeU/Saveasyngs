@@ -28,7 +28,7 @@ export function Layout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">S</span>
+          <img className="brand-mark" src="/favicon.svg" alt="Saveasy" />
           <span className="brand-name">Saveasy</span>
         </div>
         <nav className="nav">
@@ -75,14 +75,8 @@ export function Layout() {
         .brand-mark {
           width: 30px;
           height: 30px;
-          display: grid;
-          place-items: center;
-          background: var(--accent);
-          color: var(--accent-ink);
+          display: block;
           border-radius: 8px;
-          font-family: var(--font-display);
-          font-weight: 600;
-          font-size: 16px;
         }
         .brand-name {
           font-family: var(--font-display);
