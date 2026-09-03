@@ -62,6 +62,12 @@ try {
   // column already exists
 }
 
+try {
+  db.exec("ALTER TABLE transactions ADD COLUMN time TEXT");
+} catch {
+  // column already exists
+}
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;

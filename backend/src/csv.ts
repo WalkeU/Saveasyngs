@@ -56,3 +56,14 @@ export function parseDate(raw: string): string | null {
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
 }
+
+// pulls an HH:MM[:SS] out of the raw date cell, when the bank export's date
+// column actually includes a time-of-day (many do) — the date column itself
+// is otherwise truncated to just the date by parseDate above
+export function parseTime(raw: string): string | null {
+  const match = raw.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return null;
+  const [, h, m, s] = match;
+  if (Number(h) > 23 || Number(m) > 59) return null;
+  return `${h.padStart(2, "0")}:${m}${s ? `:${s}` : ""}`;
+}

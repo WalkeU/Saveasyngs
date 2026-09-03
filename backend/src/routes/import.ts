@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
-import { guessMapping, parseAmount, parseCsv, parseDate } from "../csv.js";
+import { guessMapping, parseAmount, parseCsv, parseDate, parseTime } from "../csv.js";
 import { matchCategory } from "../rules-engine.js";
 import type { ImportProfile } from "../types.js";
 
@@ -93,8 +93,13 @@ export async function importRoutes(app: FastifyInstance) {
       .all() as { pattern: string; category_id: number }[];
 
     const insertTransaction = db.prepare(
-      `INSERT OR IGNORE INTO transactions (type, amount, description, category_id, date, source, import_hash)
-       VALUES (?, ?, ?, ?, ?, 'import', ?)`,
+      `INSERT OR IGNORE INTO transactions (type, amount, description, category_id, date, time, source, import_hash)
+       VALUES (?, ?, ?, ?, ?, ?, 'import', ?)`,
+    );
+    // lets re-importing the same file backfill time-of-day onto rows that were
+    // originally imported before time capture existed, without touching anything else
+    const backfillTime = db.prepare(
+      "UPDATE transactions SET time = ? WHERE import_hash = ? AND time IS NULL",
     );
 
     let imported = 0;
@@ -124,6 +129,7 @@ export async function importRoutes(app: FastifyInstance) {
 
         const type = amount < 0 ? "expense" : "income";
         const absAmount = Math.abs(amount);
+        const timeOfDay = parseTime(rawDate);
         const hash = createHash("sha256")
           .update(`${dateIso}|${type}|${absAmount}|${description}`)
           .digest("hex");
@@ -135,10 +141,17 @@ export async function importRoutes(app: FastifyInstance) {
           description,
           categoryId,
           dateIso,
+          timeOfDay,
           hash,
         );
-        if (result.changes === 1) imported++;
-        else duplicateRows.push({ date: dateIso, description, amount: absAmount, type });
+        if (result.changes === 1) {
+          imported++;
+        } else {
+          // already imported before (matched by import_hash) — if this re-import
+          // now carries a time-of-day the original didn't, backfill it
+          if (timeOfDay) backfillTime.run(timeOfDay, hash);
+          duplicateRows.push({ date: dateIso, description, amount: absAmount, type });
+        }
       }
     });
     run(rows);

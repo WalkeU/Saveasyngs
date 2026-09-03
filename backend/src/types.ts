@@ -30,6 +30,7 @@ export interface Transaction {
   category_id: number | null;
   bucket_id: number | null;
   date: string;
+  time: string | null;
   source: "manual" | "import";
   import_hash: string | null;
   created_at: string;

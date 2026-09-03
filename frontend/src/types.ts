@@ -35,6 +35,7 @@ export interface Transaction {
   bucket_color: string | null;
   bucket_icon: string | null;
   date: string;
+  time: string | null;
   source: "manual" | "import";
   created_at: string;
 }

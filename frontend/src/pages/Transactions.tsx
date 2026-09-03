@@ -192,6 +192,7 @@ export function Transactions() {
                 <tr key={row.id}>
                   <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}>
                     {formatDate(row.date)}
+                    {row.time && <span style={{ color: "var(--ink-faint)" }}> · {row.time.slice(0, 5)}</span>}
                   </td>
                   <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
                   <td>
