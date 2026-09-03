@@ -56,6 +56,20 @@ export function formatDate(iso: string): string {
   );
 }
 
+// created_at is stored as SQLite UTC "YYYY-MM-DD HH:MM:SS" with no offset,
+// so it must be parsed as UTC explicitly before formatting into local time.
+export function formatDateTime(sqliteUtc: string): string {
+  const iso = sqliteUtc.includes("T") ? sqliteUtc : `${sqliteUtc.replace(" ", "T")}Z`;
+  return new Intl.DateTimeFormat("hu-HU", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(iso));
+}
+
 const PALETTE = [
   "#21624a",
   "#a8462c",
