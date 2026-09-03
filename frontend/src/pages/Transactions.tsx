@@ -22,6 +22,8 @@ export function Transactions() {
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
   const [showAdd, setShowAdd] = useState(false);
   const [suggestion, setSuggestion] = useState<{ transaction: Transaction; categoryId: number; pattern: string } | null>(
     null,
@@ -41,6 +43,7 @@ export function Transactions() {
 
   const load = () => {
     setLoading(true);
+    setSelected(new Set());
     api.transactions
       .list({
         type: type || undefined,
@@ -162,6 +165,32 @@ export function Transactions() {
     setTotal((t) => t - 1);
   }
 
+  function toggleSelect(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allLoadedSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+
+  function toggleSelectAll() {
+    setSelected(allLoadedSelected ? new Set() : new Set(rows.map((r) => r.id)));
+  }
+
+  async function handleBulkDelete() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    const ok = window.confirm(`Biztosan törlöd a kiválasztott ${ids.length} tranzakciót?`);
+    if (!ok) return;
+    await api.transactions.bulkRemove(ids);
+    setRows((prev) => prev.filter((r) => !selected.has(r.id)));
+    setTotal((t) => t - ids.length);
+    setSelected(new Set());
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -221,6 +250,29 @@ export function Transactions() {
         </button>
       </div>
 
+      {selected.size > 0 && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 18,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 16px",
+          }}
+        >
+          <div style={{ fontSize: 13 }}>{selected.size} tétel kiválasztva</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => setSelected(new Set())}>
+              Mégse
+            </button>
+            <button className="btn btn-danger" onClick={handleBulkDelete}>
+              <IconTrash size={14} /> Törlés
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         {!loading && rows.length === 0 ? (
           <div className="empty-state">Nincs a szűrésnek megfelelő tranzakció.</div>
@@ -228,6 +280,9 @@ export function Transactions() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: 32 }}>
+                  <input type="checkbox" checked={allLoadedSelected} onChange={toggleSelectAll} />
+                </th>
                 <th>Dátum</th>
                 <th>Leírás</th>
                 <th>Kategória</th>
@@ -238,6 +293,13 @@ export function Transactions() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(row.id)}
+                      onChange={() => toggleSelect(row.id)}
+                    />
+                  </td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}>
                     {formatDate(row.date)}
                     {row.time && <span style={{ color: "var(--ink-faint)" }}> · {row.time.slice(0, 5)}</span>}

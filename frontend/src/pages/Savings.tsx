@@ -220,24 +220,8 @@ function TransferForm({
 function LiquidCard({ data, onSet }: { data: NetWorth; onSet: (value: number | null) => void }) {
   return (
     <div className="card">
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-soft)", flex: 1 }}>
-          Szabad (liquid) pénz
-        </div>
-        {data.liquidIsManual && (
-          <span className="badge badge-muted" title="Kézzel beállított érték, nem a tranzakciókból számolva">
-            kézi
-          </span>
-        )}
-        {data.liquidIsManual && (
-          <button
-            className="btn btn-icon btn-ghost"
-            onClick={() => onSet(null)}
-            title="Vissza automatikus (tranzakció-alapú) számolásra"
-          >
-            <IconRepeat size={12} />
-          </button>
-        )}
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-soft)", marginBottom: 8 }}>
+        Szabad (liquid) pénz
       </div>
       <input
         key={roundMoney(data.liquid)}
@@ -257,11 +241,7 @@ function LiquidCard({ data, onSet }: { data: NetWorth; onSet: (value: number | n
           background: "none",
           padding: 0,
         }}
-        title={
-          data.liquidIsManual
-            ? "Kézzel beállított érték — kattints és írd át, vagy állítsd vissza az automatikus számolásra"
-            : `Kattints és írd át, ha eltér a valóstól (a számolt érték: ${roundMoney(data.liquidCalculated)})`
-        }
+        title="Kattints és írd át a szabad pénz összegét"
       />
     </div>
   );

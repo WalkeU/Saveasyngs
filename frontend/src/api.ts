@@ -1,4 +1,5 @@
 import type {
+  ActivityLogEntry,
   AppSettings,
   Category,
   CategoryRule,
@@ -83,6 +84,8 @@ export const api = {
         body: JSON.stringify(data),
       }),
     remove: (id: number) => request<void>(`/api/transactions/${id}`, { method: "DELETE" }),
+    bulkRemove: (ids: number[]) =>
+      request<void>("/api/transactions", { method: "DELETE", body: JSON.stringify({ ids }) }),
   },
   rules: {
     list: () => request<CategoryRule[]>("/api/rules"),
@@ -151,6 +154,9 @@ export const api = {
     get: () => request<AppSettings>("/api/settings"),
     update: (data: Partial<AppSettings>) =>
       request<AppSettings>("/api/settings", { method: "PATCH", body: JSON.stringify(data) }),
+  },
+  history: {
+    list: () => request<ActivityLogEntry[]>("/api/history"),
   },
   networth: {
     get: () => request<NetWorth>("/api/networth"),

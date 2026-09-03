@@ -75,6 +75,14 @@ export function formatDate(iso: string): string {
   );
 }
 
+// activity_log.created_at is a SQLite datetime('now') string ("YYYY-MM-DD
+// HH:MM:SS"), always UTC — reinterpret it as such before formatting in the
+// viewer's local time
+export function formatLogTime(sqliteDatetime: string): string {
+  const date = new Date(`${sqliteDatetime.replace(" ", "T")}Z`);
+  return new Intl.DateTimeFormat("hu-HU", { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
 const PALETTE = [
   "#21624a",
   "#a8462c",

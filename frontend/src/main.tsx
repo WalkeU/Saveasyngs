@@ -13,6 +13,7 @@ import { Rules } from "./pages/Rules";
 import { Savings } from "./pages/Savings";
 import { Recurring } from "./pages/Recurring";
 import { Settings } from "./pages/Settings";
+import { History } from "./pages/History";
 
 async function bootstrap() {
   try {
@@ -35,6 +36,7 @@ async function bootstrap() {
             <Route path="kategoriak" element={<Categories />} />
             <Route path="szabalyok" element={<Rules />} />
             <Route path="beallitasok" element={<Settings />} />
+            <Route path="elozmenyek" element={<History />} />
           </Route>
         </Routes>
       </BrowserRouter>

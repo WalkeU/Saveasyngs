@@ -156,6 +156,13 @@ export interface AppSettings {
   transactionsBatchSize: number;
 }
 
+export interface ActivityLogEntry {
+  id: number;
+  action: string;
+  summary: string;
+  created_at: string;
+}
+
 export interface LegacyImportResult {
   total: number;
   applied: number;

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { logActivity } from "../activity.js";
 import { db } from "../db.js";
 import type { Transaction, TransactionType } from "../types.js";
 
@@ -29,6 +30,17 @@ interface UpdateBody {
   categoryId?: number | null;
   bucketId?: number | null;
   date?: string;
+}
+
+const TYPE_LABEL: Record<TransactionType, string> = {
+  expense: "kiadás",
+  income: "bevétel",
+  savings: "megtakarítás",
+};
+
+function describe(t: Transaction): string {
+  const amount = `${Math.round(t.amount)} Ft`;
+  return t.description ? `${t.description} (${amount})` : amount;
 }
 
 export async function transactionRoutes(app: FastifyInstance) {
@@ -122,6 +134,10 @@ export async function transactionRoutes(app: FastifyInstance) {
     });
     const id = insert();
     const transaction = db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as Transaction;
+    logActivity(
+      "transaction.create",
+      `Új ${TYPE_LABEL[transaction.type]}: ${describe(transaction)}`,
+    );
     return reply.code(201).send(transaction);
   });
 
@@ -154,12 +170,52 @@ export async function transactionRoutes(app: FastifyInstance) {
       db.prepare(
         "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, bucket_id = ?, date = ? WHERE id = ?",
       ).run(type, amount, description, categoryId, bucketId, date, id);
+
+      const changes: string[] = [];
+      if (amount !== existing.amount) changes.push(`összeg ${Math.round(existing.amount)} → ${Math.round(amount)} Ft`);
+      if (type !== existing.type) changes.push(`típus ${TYPE_LABEL[existing.type]} → ${TYPE_LABEL[type]}`);
+      if (date !== existing.date) changes.push(`dátum ${existing.date} → ${date}`);
+      if (description !== existing.description) changes.push("leírás módosult");
+      if (categoryId !== existing.category_id) changes.push("kategória módosult");
+      if (bucketId !== existing.bucket_id) changes.push("megtakarítási hely módosult");
+      if (changes.length > 0) {
+        logActivity(
+          "transaction.update",
+          `Tranzakció módosítva (${description || `#${id}`}): ${changes.join(", ")}`,
+        );
+      }
+
       return db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as Transaction;
     },
   );
 
+  app.delete<{ Body: { ids?: number[] } }>("/api/transactions", async (req, reply) => {
+    const ids = req.body?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.code(400).send({ error: "ids is required" });
+    }
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = db
+      .prepare(`SELECT * FROM transactions WHERE id IN (${placeholders})`)
+      .all(...ids) as Transaction[];
+    if (rows.length === 0) return reply.code(204).send();
+
+    db.prepare(`DELETE FROM transactions WHERE id IN (${placeholders})`).run(...ids);
+
+    const total = Math.round(rows.reduce((sum, r) => sum + r.amount, 0));
+    logActivity("transaction.bulk_delete", `${rows.length} tétel törölve (összesen ${total} Ft)`);
+    return reply.code(204).send();
+  });
+
   app.delete<{ Params: { id: string } }>("/api/transactions/:id", async (req, reply) => {
-    db.prepare("DELETE FROM transactions WHERE id = ?").run(Number(req.params.id));
+    const id = Number(req.params.id);
+    const existing = db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as
+      | Transaction
+      | undefined;
+    db.prepare("DELETE FROM transactions WHERE id = ?").run(id);
+    if (existing) {
+      logActivity("transaction.delete", `Tranzakció törölve: ${describe(existing)}`);
+    }
     return reply.code(204).send();
   });
 }

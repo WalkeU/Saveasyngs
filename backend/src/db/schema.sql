@@ -52,6 +52,16 @@ CREATE TABLE IF NOT EXISTS app_settings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- a short audit trail of notable changes (transaction create/update/delete,
+-- liquid override changes, ...), newest first; pruned to the last 50 rows
+-- every time a new one is inserted, see logActivity() in activity.ts
+CREATE TABLE IF NOT EXISTS activity_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- one-time data migrations, tracked by name so each runs at most once
 CREATE TABLE IF NOT EXISTS _migrations (
   name TEXT PRIMARY KEY,

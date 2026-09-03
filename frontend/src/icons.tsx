@@ -170,6 +170,16 @@ export function IconPalette({ size = 16 }: IconProps) {
   );
 }
 
+export function IconHistory({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4 12a8 8 0 1 0 2.5-5.8" />
+      <path d="M4 4.5v3.7h3.7" />
+      <path d="M12 8v4.5l3 2" />
+    </svg>
+  );
+}
+
 export function IconTrash({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>

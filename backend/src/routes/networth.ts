@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { logActivity } from "../activity.js";
 import { db } from "../db.js";
 
 function computeNetWorth() {
@@ -69,6 +70,12 @@ export async function networthRoutes(app: FastifyInstance) {
       `INSERT INTO liquid_override (id, value, updated_at) VALUES (1, ?, datetime('now'))
        ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
     ).run(value);
+    logActivity(
+      "liquid.override",
+      value === null
+        ? "Szabad (liquid) pénz visszaállítva automatikus számolásra"
+        : `Szabad (liquid) pénz beállítva: ${Math.round(value)} Ft`,
+    );
     return computeNetWorth();
   });
 }
