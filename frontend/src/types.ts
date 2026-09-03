@@ -16,6 +16,8 @@ export interface SavingsBucket {
   name: string;
   color: string | null;
   icon: string | null;
+  note: string | null;
+  manual_value: number | null;
   sort_order: number;
   created_at: string;
 }
@@ -137,6 +139,7 @@ export interface NetWorthBucket {
   bucket_color: string | null;
   bucket_icon: string | null;
   total: number;
+  isManual: boolean;
 }
 
 export interface NetWorth {

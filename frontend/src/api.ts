@@ -153,8 +153,10 @@ export const api = {
     list: () => request<SavingsBucket[]>("/api/buckets"),
     create: (data: { name: string; color?: string; icon?: string }) =>
       request<SavingsBucket>("/api/buckets", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: number, data: Partial<{ name: string; color: string; icon: string }>) =>
-      request<SavingsBucket>(`/api/buckets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    update: (
+      id: number,
+      data: Partial<{ name: string; color: string; icon: string; note: string | null; manualValue: number | null }>,
+    ) => request<SavingsBucket>(`/api/buckets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id: number) => request<void>(`/api/buckets/${id}`, { method: "DELETE" }),
   },
   recurring: {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatMoney, toLocalDateInput } from "../format";
 import { CategoryIcon } from "../IconPicker";
-import { IconPlus, IconTrash } from "../icons";
+import { IconPlus, IconRepeat, IconTrash } from "../icons";
 import type { NetWorth, SavingsBucket } from "../types";
 
 export function Savings() {
@@ -36,6 +36,16 @@ export function Savings() {
     load();
   }
 
+  async function renoteBucket(id: number, note: string) {
+    await api.buckets.update(id, { note: note.trim() || null });
+    load();
+  }
+
+  async function revalueBucket(id: number, manualValue: number | null) {
+    await api.buckets.update(id, { manualValue });
+    load();
+  }
+
   const bucketsTotal = data?.buckets.reduce((sum, b) => sum + b.total, 0) ?? 0;
 
   return (
@@ -63,16 +73,53 @@ export function Savings() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
             {buckets.map((b) => {
               const bucketData = data?.buckets.find((nb) => nb.bucket_id === b.id);
+              const total = bucketData?.total ?? 0;
+              const isManual = bucketData?.isManual ?? false;
               return (
-                <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <CategoryIcon icon={b.icon} color={b.color ?? undefined} />
-                  <span style={{ flex: 1, fontSize: 13.5 }}>{b.name}</span>
-                  <span className="tabular" style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>
-                    {formatMoney(bucketData?.total ?? 0)}
-                  </span>
-                  <button className="btn btn-icon btn-ghost btn-danger" onClick={() => removeBucket(b.id)} title="Törlés">
-                    <IconTrash />
-                  </button>
+                <div
+                  key={b.id}
+                  style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 8, borderBottom: "1px solid var(--hairline)" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <CategoryIcon icon={b.icon} color={b.color ?? undefined} />
+                    <span style={{ flex: 1, fontSize: 13.5 }}>{b.name}</span>
+                    {isManual && (
+                      <span className="badge badge-muted" title="Kézzel beállított érték, nem a tranzakciókból számolva">
+                        kézi
+                      </span>
+                    )}
+                    <input
+                      key={total}
+                      type="number"
+                      defaultValue={total}
+                      onBlur={(e) => {
+                        const next = Number(e.target.value);
+                        if (!Number.isNaN(next) && next !== total) revalueBucket(b.id, next);
+                      }}
+                      className="tabular"
+                      style={{ width: 130, textAlign: "right", fontSize: 13.5 }}
+                      title="Kattints és írd át az aktuális értéket (pl. árfolyamváltozás miatt)"
+                    />
+                    {isManual && (
+                      <button
+                        className="btn btn-icon btn-ghost"
+                        onClick={() => revalueBucket(b.id, null)}
+                        title="Vissza automatikus (tranzakció-alapú) számolásra"
+                      >
+                        <IconRepeat size={14} />
+                      </button>
+                    )}
+                    <button className="btn btn-icon btn-ghost btn-danger" onClick={() => removeBucket(b.id)} title="Törlés">
+                      <IconTrash />
+                    </button>
+                  </div>
+                  <input
+                    key={b.note ?? ""}
+                    defaultValue={b.note ?? ""}
+                    onBlur={(e) => e.target.value.trim() !== (b.note ?? "") && renoteBucket(b.id, e.target.value)}
+                    placeholder="Jegyzet, pl. 10 db AAPL részvény"
+                    style={{ fontSize: 12, color: "var(--ink-soft)" }}
+                  />
                 </div>
               );
             })}

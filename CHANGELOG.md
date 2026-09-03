@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- savings buckets can now hold a manual mark-to-market value and a free-text note (e.g. "10 AAPL + 5 VOO") — for holdings like stocks/crypto whose value moves on its own; editing the value directly on Megtakarítás overrides the transfer-sum, and a later transfer into that bucket adds onto it instead of being ignored
+- savings destinations moved into their own independent `savings_buckets` table (decoupled from categories); Megtakarítás now has a bucket manager and a "transfer from liquid" form that posts a real transaction
 - removed the net worth "opening balance" setting — it's simpler to have one place for money in (income transactions) than a separate balance to reconcile against them; if you had savings before you started tracking, add them as a manual income transaction instead. Net worth is now just income − expense − savings-transfers
 
 ## v0.1.0 — 2026-09-01

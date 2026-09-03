@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS savings_buckets (
   name TEXT NOT NULL UNIQUE,
   color TEXT,
   icon TEXT,
+  -- free-text note, e.g. which stock/fund this bucket holds
+  note TEXT,
+  -- when set, this IS the bucket's total (overrides the sum of its
+  -- transactions) — for holdings whose value moves on its own (stocks,
+  -- crypto) and needs a manual mark-to-market instead of only transfers.
+  -- A new transfer into a bucket that already has manual_value adds onto
+  -- it, so it keeps representing the current total, not just principal.
+  manual_value REAL,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

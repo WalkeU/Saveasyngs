@@ -99,15 +99,27 @@ export async function transactionRoutes(app: FastifyInstance) {
     const categoryId = isSavings ? null : req.body.categoryId ?? null;
     const bucketId = isSavings ? req.body.bucketId ?? null : null;
 
-    const result = db
-      .prepare(
-        `INSERT INTO transactions (type, amount, description, category_id, bucket_id, date, source)
-         VALUES (?, ?, ?, ?, ?, ?, 'manual')`,
-      )
-      .run(type, amount, description?.trim() ?? "", categoryId, bucketId, date);
-    const transaction = db
-      .prepare("SELECT * FROM transactions WHERE id = ?")
-      .get(result.lastInsertRowid) as Transaction;
+    const insert = db.transaction(() => {
+      const result = db
+        .prepare(
+          `INSERT INTO transactions (type, amount, description, category_id, bucket_id, date, source)
+           VALUES (?, ?, ?, ?, ?, ?, 'manual')`,
+        )
+        .run(type, amount, description?.trim() ?? "", categoryId, bucketId, date);
+
+      // a bucket with a manual mark-to-market value (stocks, crypto, ...)
+      // keeps reporting that value, not the raw transfer sum — so a new
+      // transfer into it needs to add onto that value to stay accurate
+      if (isSavings && bucketId) {
+        db.prepare(
+          "UPDATE savings_buckets SET manual_value = manual_value + ? WHERE id = ? AND manual_value IS NOT NULL",
+        ).run(amount, bucketId);
+      }
+
+      return result.lastInsertRowid;
+    });
+    const id = insert();
+    const transaction = db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as Transaction;
     return reply.code(201).send(transaction);
   });
 

@@ -16,6 +16,8 @@ export interface SavingsBucket {
   name: string;
   color: string | null;
   icon: string | null;
+  note: string | null;
+  manual_value: number | null;
   sort_order: number;
   created_at: string;
 }

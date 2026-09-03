@@ -50,6 +50,18 @@ try {
 // safe to run every startup: the column above is now guaranteed to exist
 db.exec("CREATE INDEX IF NOT EXISTS idx_transactions_bucket ON transactions(bucket_id)");
 
+try {
+  db.exec("ALTER TABLE savings_buckets ADD COLUMN note TEXT");
+} catch {
+  // column already exists
+}
+
+try {
+  db.exec("ALTER TABLE savings_buckets ADD COLUMN manual_value REAL");
+} catch {
+  // column already exists
+}
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;

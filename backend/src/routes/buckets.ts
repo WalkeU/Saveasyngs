@@ -12,6 +12,8 @@ interface UpdateBody {
   name?: string;
   color?: string;
   icon?: string;
+  note?: string | null;
+  manualValue?: number | null;
 }
 
 export async function bucketRoutes(app: FastifyInstance) {
@@ -50,12 +52,12 @@ export async function bucketRoutes(app: FastifyInstance) {
     const name = req.body.name?.trim() ?? existing.name;
     const color = req.body.color ?? existing.color;
     const icon = req.body.icon ?? existing.icon;
-    db.prepare("UPDATE savings_buckets SET name = ?, color = ?, icon = ? WHERE id = ?").run(
-      name,
-      color,
-      icon,
-      id,
-    );
+    const note = req.body.note !== undefined ? req.body.note : existing.note;
+    const manualValue =
+      req.body.manualValue !== undefined ? req.body.manualValue : existing.manual_value;
+    db.prepare(
+      "UPDATE savings_buckets SET name = ?, color = ?, icon = ?, note = ?, manual_value = ? WHERE id = ?",
+    ).run(name, color, icon, note, manualValue, id);
     return db.prepare("SELECT * FROM savings_buckets WHERE id = ?").get(id) as SavingsBucket;
   });
 
