@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { evaluateAmountExpression, formatDate, formatDateTime, formatMoney, toLocalDateInput } from "../format";
-import { IconPlus, IconTrash } from "../icons";
+import { IconPlus, IconTag, IconTrash } from "../icons";
 import type { Category, CategoryRule, SavingsBucket, Transaction, TransactionType } from "../types";
 
 const today = () => toLocalDateInput(new Date());
@@ -22,6 +22,7 @@ export function Transactions() {
   const [suggestion, setSuggestion] = useState<{ transaction: Transaction; categoryId: number; pattern: string } | null>(
     null,
   );
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
 
   useEffect(() => {
     api.categories.list().then(setCategories);
@@ -50,8 +51,11 @@ export function Transactions() {
     const idNum = newCategoryId ? Number(newCategoryId) : null;
     const updated = await api.transactions.update(transaction.id, { categoryId: idNum });
     setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
+    setSuggestionOpen(false);
     if (idNum && transaction.description.trim()) {
       setSuggestion({ transaction, categoryId: idNum, pattern: transaction.description.trim() });
+    } else {
+      setSuggestion(null);
     }
   }
 
@@ -97,6 +101,7 @@ export function Transactions() {
       source: "learned",
     })) as CategoryRule & { appliedCount?: number };
     setSuggestion(null);
+    setSuggestionOpen(false);
     if (rule.appliedCount) load();
   }
 
@@ -132,23 +137,6 @@ export function Transactions() {
           }}
           onCancel={() => setShowAdd(false)}
         />
-      )}
-
-      {suggestion && (
-        <div className="banner" style={{ marginBottom: 18 }}>
-          <span>Szabály létrehozása — ha a leírás tartalmazza:</span>
-          <input value={suggestion.pattern} onChange={(e) => setSuggestion({ ...suggestion, pattern: e.target.value })} />
-          <span>
-            → mindig{" "}
-            <strong>{categories.find((c) => c.id === suggestion.categoryId)?.name}</strong>
-          </span>
-          <button className="btn btn-primary" onClick={confirmRule}>
-            Létrehozás
-          </button>
-          <button className="btn btn-ghost" onClick={() => setSuggestion(null)}>
-            Mégse
-          </button>
-        </div>
       )}
 
       <div className="card" style={{ marginBottom: 18, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -207,45 +195,92 @@ export function Transactions() {
                   </td>
                   <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
                   <td>
-                    {row.type === "savings" ? (
-                      <select
-                        value={row.bucket_id ? `bucket:${row.bucket_id}` : ""}
-                        onChange={(e) => handleCategorySelect(row, e.target.value)}
-                        style={{ fontSize: 12.5, padding: "4px 8px" }}
-                      >
-                        <option value="">Nincs megtakarítási hely</option>
-                        {buckets.map((b) => (
-                          <option key={b.id} value={`bucket:${b.id}`}>
-                            {b.name}
-                          </option>
-                        ))}
-                        <option value="__revert__">« vissza kiadásnak</option>
-                      </select>
-                    ) : (
-                      <select
-                        value={row.category_id ?? ""}
-                        onChange={(e) => handleCategorySelect(row, e.target.value)}
-                        style={{ fontSize: 12.5, padding: "4px 8px" }}
-                      >
-                        <option value="">Nincs kategória</option>
-                        {categories
-                          .filter((c) => c.type === row.type)
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {row.type === "savings" ? (
+                        <select
+                          value={row.bucket_id ? `bucket:${row.bucket_id}` : ""}
+                          onChange={(e) => handleCategorySelect(row, e.target.value)}
+                          style={{ fontSize: 12.5, padding: "4px 8px" }}
+                        >
+                          <option value="">Nincs megtakarítási hely</option>
+                          {buckets.map((b) => (
+                            <option key={b.id} value={`bucket:${b.id}`}>
+                              {b.name}
                             </option>
                           ))}
-                        {buckets.length > 0 && (
-                          <optgroup label="Megtakarításnak jelölés">
-                            {buckets.map((b) => (
-                              <option key={`b-${b.id}`} value={`bucket:${b.id}`}>
-                                {b.name}
+                          <option value="__revert__">« vissza kiadásnak</option>
+                        </select>
+                      ) : (
+                        <select
+                          value={row.category_id ?? ""}
+                          onChange={(e) => handleCategorySelect(row, e.target.value)}
+                          style={{ fontSize: 12.5, padding: "4px 8px" }}
+                        >
+                          <option value="">Nincs kategória</option>
+                          {categories
+                            .filter((c) => c.type === row.type)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
                               </option>
                             ))}
-                          </optgroup>
-                        )}
-                      </select>
-                    )}
+                          {buckets.length > 0 && (
+                            <optgroup label="Megtakarításnak jelölés">
+                              {buckets.map((b) => (
+                                <option key={`b-${b.id}`} value={`bucket:${b.id}`}>
+                                  {b.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      )}
+                      {suggestion && suggestion.transaction.id === row.id && (
+                        <div className="rule-suggest">
+                          <button
+                            type="button"
+                            className="btn btn-icon btn-ghost"
+                            onClick={() => setSuggestionOpen((v) => !v)}
+                            title="Szabály létrehozása ebből a kategorizálásból"
+                          >
+                            <IconTag size={14} />
+                          </button>
+                          {suggestionOpen && (
+                            <>
+                              <div className="popover-backdrop" onClick={() => setSuggestionOpen(false)} />
+                              <div className="rule-popover">
+                                <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+                                  Szabály létrehozása — ha a leírás tartalmazza:
+                                </div>
+                                <input
+                                  value={suggestion.pattern}
+                                  onChange={(e) => setSuggestion({ ...suggestion, pattern: e.target.value })}
+                                  autoFocus
+                                />
+                                <div style={{ fontSize: 12 }}>
+                                  → mindig{" "}
+                                  <strong>{categories.find((c) => c.id === suggestion.categoryId)?.name}</strong>
+                                </div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={confirmRule}>
+                                    Létrehozás
+                                  </button>
+                                  <button
+                                    className="btn btn-ghost"
+                                    onClick={() => {
+                                      setSuggestion(null);
+                                      setSuggestionOpen(false);
+                                    }}
+                                  >
+                                    Mégse
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className={`tabular amount-${row.type}`} style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     {row.type === "expense" ? "−" : row.type === "income" ? "+" : "⇄"}
