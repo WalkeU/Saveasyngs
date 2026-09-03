@@ -37,7 +37,31 @@ export async function ruleRoutes(app: FastifyInstance) {
     const rule = db
       .prepare("SELECT * FROM category_rules WHERE id = ?")
       .get(result.lastInsertRowid) as CategoryRule;
-    return reply.code(201).send(rule);
+
+    // apply retroactively: categorize existing, still-uncategorized transactions
+    // that match this rule's pattern, so the rule doesn't only affect future imports
+    const category = db.prepare("SELECT type FROM categories WHERE id = ?").get(categoryId) as
+      | { type: string }
+      | undefined;
+    let appliedCount = 0;
+    if (category) {
+      const normalizedPattern = pattern.trim().toLowerCase();
+      const candidates = db
+        .prepare("SELECT id, description FROM transactions WHERE category_id IS NULL AND type = ?")
+        .all(category.type) as { id: number; description: string }[];
+      const matchingIds = candidates
+        .filter((t) => t.description.toLowerCase().includes(normalizedPattern))
+        .map((t) => t.id);
+      if (matchingIds.length) {
+        const update = db.prepare("UPDATE transactions SET category_id = ? WHERE id = ?");
+        db.transaction((ids: number[]) => {
+          for (const id of ids) update.run(categoryId, id);
+        })(matchingIds);
+        appliedCount = matchingIds.length;
+      }
+    }
+
+    return reply.code(201).send({ ...rule, appliedCount });
   });
 
   app.patch<{ Params: { id: string }; Body: UpdateRuleBody }>(

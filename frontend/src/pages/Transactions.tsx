@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { evaluateAmountExpression, formatDate, formatMoney, toLocalDateInput } from "../format";
 import { IconPlus, IconTrash } from "../icons";
-import type { Category, SavingsBucket, Transaction, TransactionType } from "../types";
+import type { Category, CategoryRule, SavingsBucket, Transaction, TransactionType } from "../types";
 
 const today = () => toLocalDateInput(new Date());
 
@@ -91,8 +91,13 @@ export function Transactions() {
 
   async function confirmRule() {
     if (!suggestion) return;
-    await api.rules.create({ pattern: suggestion.pattern, categoryId: suggestion.categoryId, source: "learned" });
+    const rule = (await api.rules.create({
+      pattern: suggestion.pattern,
+      categoryId: suggestion.categoryId,
+      source: "learned",
+    })) as CategoryRule & { appliedCount?: number };
     setSuggestion(null);
+    if (rule.appliedCount) load();
   }
 
   async function handleDelete(transaction: Transaction) {
