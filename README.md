@@ -1,4 +1,4 @@
-# Savings
+# Saveasy
 
 Első indítás előtt (csak egyszer):
 cp .env.example .env

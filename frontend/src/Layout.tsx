@@ -29,7 +29,7 @@ export function Layout() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">S</span>
-          <span className="brand-name">Savings</span>
+          <span className="brand-name">Saveasy</span>
         </div>
         <nav className="nav">
           {NAV.map(({ to, label, icon: Icon, end }) => (

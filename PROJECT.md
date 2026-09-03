@@ -1,4 +1,4 @@
-# Savings — projekt koncepció
+# Saveasy — projekt koncepció
 
 Egyszerű, önhostolt személyes pénzügyi alkalmazás: költések rögzítése és
 csoportosítása, kimutatások, megtakarítások (savings) vezetése, havi

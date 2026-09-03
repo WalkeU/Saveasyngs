@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- app renamed to **Saveasy**, with a new favicon/brand mark (green rounded square, replacing the generic placeholder icon) — shown in the browser tab and the sidebar
 - new Előzmények page keeps a running log of the last 50 changes (transactions created/edited/deleted, bulk deletes, liquid pénz overrides) — nothing older than that is kept
 - "Szabad (liquid) pénz" no longer shows a "kézi" badge or a revert-to-calculated button once you've typed a real number in — whatever you set it to is now just accepted as the figure, full stop
 - Tranzakciók now supports multi-select (checkbox per row + "select all loaded") with a bulk-delete action, e.g. to wipe every income transaction at once
