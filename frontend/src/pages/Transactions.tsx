@@ -190,7 +190,10 @@ export function Transactions() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }} title={formatDateTime(row.created_at)}>
+                  <td
+                    style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}
+                    title={`${row.source === "import" ? "Importálva" : "Rögzítve"}: ${formatDateTime(row.created_at)}`}
+                  >
                     {formatDate(row.date)}
                   </td>
                   <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
