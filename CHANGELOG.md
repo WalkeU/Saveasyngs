@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- fixed rules being able to duplicate — creating the same pattern for the same category (e.g. via the "learn this pattern" popup firing again for another transaction with an identical description) now reuses the existing rule instead of inserting a second copy; a one-time migration also cleans up any duplicates already in the database
+
 - new "Ismétlődők aránya" card on Áttekintés shows how big a slice of the browsed month's actual expense/income the enabled recurring items would account for (nominal recurring sum vs. that month's real total, as an amount + %) — follows the same month navigator already at the top of the page
 
 - Ismétlődők: category/bucket is now an editable dropdown right in the list (same as Tranzakciók) — it used to be static text with no way to set or change it after creating the recurring item

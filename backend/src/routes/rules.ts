@@ -31,12 +31,31 @@ export async function ruleRoutes(app: FastifyInstance) {
     if (!pattern?.trim() || !categoryId) {
       return reply.code(400).send({ error: "pattern and categoryId are required" });
     }
-    const result = db
-      .prepare("INSERT INTO category_rules (pattern, category_id, source) VALUES (?, ?, ?)")
-      .run(pattern.trim(), categoryId, source === "learned" ? "learned" : "manual");
-    const rule = db
-      .prepare("SELECT * FROM category_rules WHERE id = ?")
-      .get(result.lastInsertRowid) as CategoryRule;
+    const trimmed = pattern.trim();
+    const normalized = trimmed.toLowerCase();
+
+    // same pattern already saved for this category (e.g. the "learn this
+    // pattern" popup confirmed twice for two transactions with the same
+    // description) — reuse it instead of inserting a duplicate
+    const existingRules = db
+      .prepare("SELECT * FROM category_rules WHERE category_id = ?")
+      .all(categoryId) as CategoryRule[];
+    const duplicate = existingRules.find((r) => r.pattern.trim().toLowerCase() === normalized);
+
+    let rule: CategoryRule;
+    if (duplicate) {
+      if (!duplicate.enabled) {
+        db.prepare("UPDATE category_rules SET enabled = 1 WHERE id = ?").run(duplicate.id);
+      }
+      rule = db.prepare("SELECT * FROM category_rules WHERE id = ?").get(duplicate.id) as CategoryRule;
+    } else {
+      const result = db
+        .prepare("INSERT INTO category_rules (pattern, category_id, source) VALUES (?, ?, ?)")
+        .run(trimmed, categoryId, source === "learned" ? "learned" : "manual");
+      rule = db
+        .prepare("SELECT * FROM category_rules WHERE id = ?")
+        .get(result.lastInsertRowid) as CategoryRule;
+    }
 
     // apply retroactively: categorize existing, still-uncategorized transactions
     // that match this rule's pattern, so the rule doesn't only affect future imports

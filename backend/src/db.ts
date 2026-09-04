@@ -249,6 +249,20 @@ migrate("2026-09-drop-net-worth-opening", () => {
   db.exec("DROP TABLE IF EXISTS net_worth_opening");
 });
 
+// POST /api/rules used to insert unconditionally, so the same pattern could
+// be saved for the same category more than once (e.g. the "learn this
+// pattern" popup firing again for another transaction with the same
+// description). Keeps the oldest row per (pattern, category) pair; going
+// forward the route itself checks before inserting.
+migrate("2026-09-dedupe-rules", () => {
+  db.exec(`
+    DELETE FROM category_rules
+    WHERE id NOT IN (
+      SELECT MIN(id) FROM category_rules GROUP BY LOWER(TRIM(pattern)), category_id
+    )
+  `);
+});
+
 const insertCategory = db.prepare(
   "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
 );
