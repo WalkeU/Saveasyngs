@@ -74,6 +74,7 @@ export const api = {
       categoryId?: number | null;
       bucketId?: number | null;
       date: string;
+      note?: string | null;
     }) => request<Transaction>("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
     update: (
       id: number,
@@ -84,6 +85,7 @@ export const api = {
         categoryId: number | null;
         bucketId: number | null;
         date: string;
+        note: string | null;
       }>,
     ) =>
       request<Transaction>(`/api/transactions/${id}`, {

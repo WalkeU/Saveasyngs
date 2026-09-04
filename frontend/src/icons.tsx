@@ -180,6 +180,16 @@ export function IconHistory({ size = 18 }: IconProps) {
   );
 }
 
+export function IconNote({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M5.5 4h13a1 1 0 0 1 1 1v10.5L15 20H5.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
+      <path d="M8.5 9h7" />
+      <path d="M8.5 13h4.5" />
+    </svg>
+  );
+}
+
 export function IconLogout({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>

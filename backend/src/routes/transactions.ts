@@ -21,6 +21,7 @@ interface CreateBody {
   categoryId?: number | null;
   bucketId?: number | null;
   date: string;
+  note?: string | null;
 }
 
 interface UpdateBody {
@@ -30,6 +31,7 @@ interface UpdateBody {
   categoryId?: number | null;
   bucketId?: number | null;
   date?: string;
+  note?: string | null;
 }
 
 const TYPE_LABEL: Record<TransactionType, string> = {
@@ -105,7 +107,7 @@ export async function transactionRoutes(app: FastifyInstance) {
   });
 
   app.post<{ Body: CreateBody }>("/api/transactions", async (req, reply) => {
-    const { type, amount, description, date } = req.body;
+    const { type, amount, description, date, note } = req.body;
     if ((type !== "expense" && type !== "income" && type !== "savings") || !amount || amount <= 0 || !date) {
       return reply.code(400).send({ error: "type, positive amount and date are required" });
     }
@@ -116,10 +118,10 @@ export async function transactionRoutes(app: FastifyInstance) {
     const insert = db.transaction(() => {
       const result = db
         .prepare(
-          `INSERT INTO transactions (type, amount, description, category_id, bucket_id, date, source)
-           VALUES (?, ?, ?, ?, ?, ?, 'manual')`,
+          `INSERT INTO transactions (type, amount, description, category_id, bucket_id, date, note, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'manual')`,
         )
-        .run(type, amount, description?.trim() ?? "", categoryId, bucketId, date);
+        .run(type, amount, description?.trim() ?? "", categoryId, bucketId, date, note?.trim() || null);
 
       // a bucket with a manual mark-to-market value (stocks, crypto, ...)
       // keeps reporting that value, not the raw transfer sum — so a new
@@ -154,6 +156,7 @@ export async function transactionRoutes(app: FastifyInstance) {
       const amount = req.body.amount ?? existing.amount;
       const description = req.body.description?.trim() ?? existing.description;
       const date = req.body.date ?? existing.date;
+      const note = req.body.note !== undefined ? req.body.note?.trim() || null : existing.note;
 
       const isSavings = type === "savings";
       const categoryId = isSavings
@@ -168,8 +171,8 @@ export async function transactionRoutes(app: FastifyInstance) {
         : null;
 
       db.prepare(
-        "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, bucket_id = ?, date = ? WHERE id = ?",
-      ).run(type, amount, description, categoryId, bucketId, date, id);
+        "UPDATE transactions SET type = ?, amount = ?, description = ?, category_id = ?, bucket_id = ?, date = ?, note = ? WHERE id = ?",
+      ).run(type, amount, description, categoryId, bucketId, date, note, id);
 
       const changes: string[] = [];
       if (amount !== existing.amount) changes.push(`összeg ${Math.round(existing.amount)} → ${Math.round(amount)} Ft`);
@@ -178,6 +181,7 @@ export async function transactionRoutes(app: FastifyInstance) {
       if (description !== existing.description) changes.push("leírás módosult");
       if (categoryId !== existing.category_id) changes.push("kategória módosult");
       if (bucketId !== existing.bucket_id) changes.push("megtakarítási hely módosult");
+      if (note !== existing.note) changes.push("jegyzet módosult");
       if (changes.length > 0) {
         logActivity(
           "transaction.update",

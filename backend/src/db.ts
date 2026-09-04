@@ -69,6 +69,12 @@ try {
 }
 
 try {
+  db.exec("ALTER TABLE transactions ADD COLUMN note TEXT");
+} catch {
+  // column already exists
+}
+
+try {
   db.exec("ALTER TABLE app_settings ADD COLUMN transactions_batch_size INTEGER NOT NULL DEFAULT 100");
 } catch {
   // column already exists

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { evaluateAmountExpression, formatDate, formatMoney, roundMoney, toLocalDateInput } from "../format";
-import { IconPlus, IconTag, IconTrash } from "../icons";
+import { IconNote, IconPlus, IconTag, IconTrash } from "../icons";
 import type { Category, CategoryRule, SavingsBucket, Transaction, TransactionType } from "../types";
 
 const today = () => toLocalDateInput(new Date());
@@ -29,6 +29,7 @@ export function Transactions() {
     null,
   );
   const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const [noteEditor, setNoteEditor] = useState<{ transaction: Transaction; text: string } | null>(null);
 
   useEffect(() => {
     api.categories.list().then(setCategories);
@@ -142,6 +143,15 @@ export function Transactions() {
     }
     const updated = await api.transactions.update(transaction.id, { amount: next });
     setRows((prev) => prev.map((r) => (r.id === transaction.id ? { ...r, ...updated } : r)));
+  }
+
+  async function saveNote() {
+    if (!noteEditor) return;
+    const updated = await api.transactions.update(noteEditor.transaction.id, {
+      note: noteEditor.text.trim() || null,
+    });
+    setRows((prev) => prev.map((r) => (r.id === noteEditor.transaction.id ? { ...r, ...updated } : r)));
+    setNoteEditor(null);
   }
 
   async function confirmRule() {
@@ -304,7 +314,45 @@ export function Transactions() {
                     {formatDate(row.date)}
                     {row.time && <span style={{ color: "var(--ink-faint)" }}> · {row.time.slice(0, 5)}</span>}
                   </td>
-                  <td>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</span>
+                      <div className="rule-suggest">
+                        <button
+                          type="button"
+                          className="btn btn-icon btn-ghost"
+                          style={{ color: row.note ? "var(--accent)" : "var(--ink-faint)" }}
+                          onClick={() => setNoteEditor({ transaction: row, text: row.note ?? "" })}
+                          title={row.note ? "Jegyzet szerkesztése" : "Jegyzet hozzáadása"}
+                        >
+                          <IconNote size={13} />
+                        </button>
+                        {noteEditor && noteEditor.transaction.id === row.id && (
+                          <>
+                            <div className="popover-backdrop" onClick={() => setNoteEditor(null)} />
+                            <div className="rule-popover">
+                              <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>Jegyzet</div>
+                              <textarea
+                                value={noteEditor.text}
+                                onChange={(e) => setNoteEditor({ ...noteEditor, text: e.target.value })}
+                                rows={3}
+                                autoFocus
+                                style={{ resize: "vertical", fontFamily: "inherit" }}
+                              />
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={saveNote}>
+                                  Mentés
+                                </button>
+                                <button className="btn btn-ghost" onClick={() => setNoteEditor(null)}>
+                                  Mégse
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {row.type === "savings" ? (
