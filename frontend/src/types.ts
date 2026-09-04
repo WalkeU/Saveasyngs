@@ -135,6 +135,12 @@ export interface MissingRecurring {
   missing: RecurringPayment[];
 }
 
+export interface RecurringShare {
+  month: string;
+  expense: { recurringTotal: number; monthTotal: number };
+  income: { recurringTotal: number; monthTotal: number };
+}
+
 export interface NetWorthBucket {
   bucket_id: number;
   bucket_name: string;

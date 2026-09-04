@@ -64,6 +64,36 @@ export async function recurringRoutes(app: FastifyInstance) {
     return { month, missing };
   });
 
+  // how much of a given month's actual expense/income the recurring items
+  // would account for, if all of them happened — i.e. the nominal sum of
+  // enabled recurring_payments per type, against that month's real total.
+  // Not matched to individual transactions (a recurring item's category may
+  // also collect unrelated one-off spending, which would make a per-
+  // transaction match misleading) — this answers "how big a slice of a
+  // typical month is already spoken for" instead.
+  app.get<{ Querystring: { month?: string } }>("/api/recurring/share", async (req) => {
+    const now = new Date();
+    const month =
+      req.query.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    const recurringTotals = db
+      .prepare("SELECT type, SUM(amount) AS total FROM recurring_payments WHERE enabled = 1 GROUP BY type")
+      .all() as { type: TransactionType; total: number }[];
+
+    const monthTotals = db
+      .prepare("SELECT type, SUM(amount) AS total FROM transactions WHERE strftime('%Y-%m', date) = ? GROUP BY type")
+      .all(month) as { type: TransactionType; total: number }[];
+
+    const byType = (list: { type: TransactionType; total: number }[], type: TransactionType) =>
+      list.find((r) => r.type === type)?.total ?? 0;
+
+    return {
+      month,
+      expense: { recurringTotal: byType(recurringTotals, "expense"), monthTotal: byType(monthTotals, "expense") },
+      income: { recurringTotal: byType(recurringTotals, "income"), monthTotal: byType(monthTotals, "income") },
+    };
+  });
+
   app.post<{ Body: CreateBody }>("/api/recurring", async (req, reply) => {
     const { type, amount, description, dayOfMonth } = req.body;
     if (

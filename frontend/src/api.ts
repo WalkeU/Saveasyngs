@@ -12,6 +12,7 @@ import type {
   MonthlyComparison,
   NetWorth,
   RecurringPayment,
+  RecurringShare,
   ReportByCategory,
   ReportSummary,
   SavingsBucket,
@@ -206,6 +207,8 @@ export const api = {
     list: () => request<RecurringPayment[]>("/api/recurring"),
     missing: (month?: string) =>
       request<MissingRecurring>(`/api/recurring/missing${month ? `?month=${month}` : ""}`),
+    share: (month?: string) =>
+      request<RecurringShare>(`/api/recurring/share${month ? `?month=${month}` : ""}`),
     create: (data: {
       type: TransactionType;
       amount: number;

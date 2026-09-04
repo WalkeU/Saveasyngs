@@ -26,6 +26,7 @@ import { IconChevronLeft, IconChevronRight } from "../icons";
 import type {
   MonthlyByCategory,
   MonthlyComparison,
+  RecurringShare,
   ReportByCategory,
   ReportSummary,
   TransactionType,
@@ -71,6 +72,11 @@ export function Dashboard() {
       .then(setTrend)
       .finally(() => setTrendLoading(false));
   }, [trendType]);
+
+  const [share, setShare] = useState<RecurringShare | null>(null);
+  useEffect(() => {
+    api.recurring.share(monthKey(monthOffset)).then(setShare);
+  }, [monthOffset]);
 
   useEffect(() => {
     setLoading(true);
@@ -147,6 +153,20 @@ export function Dashboard() {
         <StatCard label="Kiadás" value={summary?.expense ?? 0} tone="expense" />
         <StatCard label="Egyenleg" value={summary?.net ?? 0} tone={((summary?.net ?? 0) >= 0 ? "income" : "expense")} />
       </div>
+
+      {share && (share.expense.recurringTotal > 0 || share.income.recurringTotal > 0) && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 17, marginBottom: 14 }}>Ismétlődők aránya</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {share.expense.recurringTotal > 0 && (
+              <RecurringShareRow label="Kiadás" tone="expense" data={share.expense} />
+            )}
+            {share.income.recurringTotal > 0 && (
+              <RecurringShareRow label="Bevétel" tone="income" data={share.income} />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -412,6 +432,39 @@ export function Dashboard() {
 function formatMonthShort(month: string) {
   const [y, m] = month.split("-").map(Number);
   return new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(new Date(y, m - 1, 1));
+}
+
+function RecurringShareRow({
+  label,
+  tone,
+  data,
+}: {
+  label: string;
+  tone: "income" | "expense";
+  data: { recurringTotal: number; monthTotal: number };
+}) {
+  const pct = data.monthTotal > 0 ? (data.recurringTotal / data.monthTotal) * 100 : null;
+  const color = tone === "income" ? "var(--income)" : "var(--expense)";
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 4 }}>
+        <span>{label}</span>
+        <span className="tabular">
+          {formatMoney(data.recurringTotal)} / {formatMoney(data.monthTotal)}
+          {pct !== null && <span style={{ color: "var(--ink-faint)" }}> ({pct.toFixed(0)}%)</span>}
+        </span>
+      </div>
+      <div style={{ height: 5, background: "var(--paper-sunken)", borderRadius: 4, overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${Math.min(pct ?? 100, 100)}%`,
+            height: "100%",
+            background: color,
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function StatCard({ label, value, tone }: { label: string; value: number; tone: "income" | "expense" }) {
