@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- Ismétlődők: category/bucket is now an editable dropdown right in the list (same as Tranzakciók) — it used to be static text with no way to set or change it after creating the recurring item
+
 - transactions can now have a free-text note — a small icon next to the description in Tranzakciók opens a popover to add/edit one; the icon turns accent-colored once a note exists
 - optional single-password login (`AUTH_ENABLED` + `SESSION_KEY` env vars, see README "Auth") — no more manual bcrypt-hash generation: turn it on and the app asks you to set a password the first time you open it, which you can then change any time from Beállítások. bcrypt-hashed, signed httpOnly session cookie, rate-limited login/setup/change-password endpoints (10 attempts / 5 min). Off by default, so nothing changes for setups relying on network-level access control (e.g. VPN) instead
 - fixed a migration-ordering bug that crashed the backend on its very first boot against a brand-new database (the `2026-09-savings-type-widen` migration rebuilt `transactions` without the `bucket_id`/`time`/`note` columns the ALTER-shims above it had just added, so the very next migration crashed trying to use `bucket_id`) — only affects databases that had never booted before; anything already running was unaffected

@@ -36,6 +36,15 @@ export function Recurring() {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
+  async function updateCategory(item: RecurringPayment, value: string) {
+    const idNum = value ? Number(value) : null;
+    const updated =
+      item.type === "savings"
+        ? await api.recurring.update(item.id, { bucketId: idNum })
+        : await api.recurring.update(item.id, { categoryId: idNum });
+    setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
+  }
+
   async function recordNow(item: RecurringPayment) {
     await api.transactions.create({
       type: item.type,
@@ -143,10 +152,38 @@ export function Recurring() {
                 <tr key={item.id} style={{ opacity: item.enabled ? 1 : 0.5 }}>
                   <td>{item.description || "—"}</td>
                   <td>
-                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <CategoryIcon icon={item.category_icon ?? item.bucket_icon} color={(item.category_color ?? item.bucket_color) ?? undefined} />
-                      {item.category_name ?? item.bucket_name ?? "—"}
-                    </span>
+                      {item.type === "savings" ? (
+                        <select
+                          value={item.bucket_id ?? ""}
+                          onChange={(e) => updateCategory(item, e.target.value)}
+                          style={{ fontSize: 12.5, padding: "4px 8px" }}
+                        >
+                          <option value="">Nincs megtakarítási hely</option>
+                          {buckets.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={item.category_id ?? ""}
+                          onChange={(e) => updateCategory(item, e.target.value)}
+                          style={{ fontSize: 12.5, padding: "4px 8px" }}
+                        >
+                          <option value="">Nincs kategória</option>
+                          {categories
+                            .filter((c) => c.type === item.type)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                        </select>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className={`badge ${item.type === "expense" ? "badge-expense" : item.type === "income" ? "badge-income" : "badge-muted"}`}>
