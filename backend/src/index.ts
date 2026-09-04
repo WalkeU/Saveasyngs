@@ -35,7 +35,13 @@ const app = Fastify({ logger: true });
 await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
 await app.register(cookie, { secret: sessionSecret });
 
-const PUBLIC_PATHS = ["/api/health", "/api/auth/status", "/api/auth/login", "/api/auth/logout"];
+const PUBLIC_PATHS = [
+  "/api/health",
+  "/api/auth/status",
+  "/api/auth/setup",
+  "/api/auth/login",
+  "/api/auth/logout",
+];
 app.addHook("onRequest", async (req, reply) => {
   if (!AUTH_ENABLED) return;
   const path = req.url.split("?")[0];

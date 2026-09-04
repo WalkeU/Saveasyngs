@@ -1,21 +1,28 @@
 import { useState } from "react";
 import { api } from "../api";
 
-export function Login({ onSuccess }: { onSuccess: () => void }) {
+export function Login({ mode, onSuccess }: { mode: "login" | "setup"; onSuccess: () => void }) {
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (mode === "setup" && password !== confirm) {
+      setError("A két jelszó nem egyezik.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.auth.login(password);
+      if (mode === "setup") await api.auth.setup(password);
+      else await api.auth.login(password);
       onSuccess();
     } catch {
-      setError("Hibás jelszó.");
+      setError(mode === "setup" ? "Nem sikerült beállítani a jelszót." : "Hibás jelszó.");
       setPassword("");
+      setConfirm("");
     } finally {
       setSubmitting(false);
     }
@@ -37,19 +44,37 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
             Saveasy
           </span>
         </div>
+        {mode === "setup" && (
+          <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+            Első belépés — állíts be egy jelszót. Bármikor módosíthatod majd a Beállításokban.
+          </div>
+        )}
         <div className="field">
-          <label>Jelszó</label>
+          <label>{mode === "setup" ? "Új jelszó" : "Jelszó"}</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
             required
+            minLength={4}
           />
         </div>
+        {mode === "setup" && (
+          <div className="field">
+            <label>Jelszó megerősítése</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              minLength={4}
+            />
+          </div>
+        )}
         {error && <div style={{ fontSize: 12.5, color: "var(--expense)" }}>{error}</div>}
         <button className="btn btn-primary" type="submit" disabled={submitting}>
-          Belépés
+          {mode === "setup" ? "Jelszó beállítása" : "Belépés"}
         </button>
       </form>
     </div>

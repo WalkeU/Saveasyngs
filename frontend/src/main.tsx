@@ -21,19 +21,30 @@ async function bootstrap() {
 
   let authRequired = false;
   let authenticated = true;
+  let needsSetup = false;
   try {
     const status = await api.auth.status();
     authRequired = status.authRequired;
     authenticated = status.authenticated;
+    needsSetup = status.needsSetup;
   } catch {
     // can't reach the backend at all — let it through; every subsequent
     // API call will fail the same way, so this isn't an auth bypass
   }
 
+  if (authRequired && needsSetup) {
+    root.render(
+      <StrictMode>
+        <Login mode="setup" onSuccess={() => window.location.reload()} />
+      </StrictMode>,
+    );
+    return;
+  }
+
   if (authRequired && !authenticated) {
     root.render(
       <StrictMode>
-        <Login onSuccess={() => window.location.reload()} />
+        <Login mode="login" onSuccess={() => window.location.reload()} />
       </StrictMode>,
     );
     return;

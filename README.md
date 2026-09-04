@@ -30,14 +30,9 @@ véded (pl. VPN). Ha szeretnél egy jelszavas belépést is ráadásul (pl. mert
 nem csak VPN-en, hanem publikusan is elérhető lesz), állítsd be a `.env`-ben:
 
 ```
-AUTH_PASSWORD_HASH=...   # bcrypt hash, lásd lentebb
-SESSION_KEY=...          # 32 bájtos hex kulcs, lásd lentebb
-COOKIE_SECURE=false      # true, ha már valódi TLS van előtte
-```
-
-Jelszó-hash generálása:
-```
-docker compose -f docker-compose.prod.yml run --rm backend node -e "console.log(require('bcrypt').hashSync(process.argv[1], 12))" 'a-jelszavad'
+AUTH_ENABLED=true
+SESSION_KEY=...   # 32 bájtos hex kulcs, lásd lentebb
+COOKIE_SECURE=false  # true, ha már valódi TLS van előtte
 ```
 
 Session kulcs generálása:
@@ -45,7 +40,11 @@ Session kulcs generálása:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Ha `AUTH_PASSWORD_HASH` üres marad, minden pontosan úgy működik, mint eddig
+Ezután az app első megnyitásakor jelszót kér tőled (nincs hash-generálás,
+nincs docker exec) — onnantól az a jelszó kell a belépéshez, bejelentkezés
+után pedig a Beállításokban bármikor módosíthatod.
+
+Ha `AUTH_ENABLED` üres/false marad, minden pontosan úgy működik, mint eddig
 — nincs login képernyő, semmi extra lépés.
 
 ## Mi ez?

@@ -82,6 +82,16 @@ try {
 
 db.exec("INSERT OR IGNORE INTO app_settings (id, decimal_places) VALUES (1, 0)");
 
+// legacy pre-seed path: AUTH_PASSWORD_HASH used to be the only way to set
+// the password (via env var). Still honored on first boot only — never
+// overwrites a hash already set through the app (setup/change-password),
+// which live in the auth_config row instead of the environment now.
+if (process.env.AUTH_PASSWORD_HASH) {
+  db.prepare("INSERT OR IGNORE INTO auth_config (id, password_hash) VALUES (1, ?)").run(
+    process.env.AUTH_PASSWORD_HASH,
+  );
+}
+
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
   if (applied) return;
@@ -143,13 +153,16 @@ migrate("2026-09-category-icons", () => {
           amount REAL NOT NULL CHECK (amount > 0),
           description TEXT NOT NULL DEFAULT '',
           category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+          bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL,
           date TEXT NOT NULL,
+          time TEXT,
+          note TEXT,
           source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'import')),
           import_hash TEXT,
           created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
-        INSERT INTO transactions_new (id, type, amount, description, category_id, date, source, import_hash, created_at)
-          SELECT id, type, amount, description, category_id, date, source, import_hash, created_at FROM transactions;
+        INSERT INTO transactions_new (id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at)
+          SELECT id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at FROM transactions;
         DROP TABLE transactions;
         ALTER TABLE transactions_new RENAME TO transactions;
 

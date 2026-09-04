@@ -160,11 +160,22 @@ export const api = {
     get: () => request<{ legacyCategoryImport: boolean }>("/api/config"),
   },
   auth: {
-    status: () => request<{ authRequired: boolean; authenticated: boolean }>("/api/auth/status"),
+    status: () =>
+      request<{ authRequired: boolean; authenticated: boolean; needsSetup: boolean }>("/api/auth/status"),
+    setup: (password: string) =>
+      request<{ authenticated: boolean }>("/api/auth/setup", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      }),
     login: (password: string) =>
       request<{ authenticated: boolean }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ password }),
+      }),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      request<{ ok: boolean }>("/api/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
       }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   },

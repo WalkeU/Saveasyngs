@@ -62,6 +62,16 @@ CREATE TABLE IF NOT EXISTS activity_log (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- single stored password hash for the optional login (see AUTH_ENABLED in
+-- auth.ts). NULL password_hash with AUTH_ENABLED on means "first-run setup
+-- needed" — set via POST /api/auth/setup, changed via
+-- POST /api/auth/change-password (Beállítások).
+CREATE TABLE IF NOT EXISTS auth_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  password_hash TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- one-time data migrations, tracked by name so each runs at most once
 CREATE TABLE IF NOT EXISTS _migrations (
   name TEXT PRIMARY KEY,
