@@ -317,6 +317,22 @@ export function Transactions() {
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <span>{row.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</span>
+                      {row.note && (
+                        <span
+                          style={{
+                            fontSize: 11.5,
+                            color: "var(--ink-faint)",
+                            overflow: "hidden",
+                            whiteSpace: "nowrap",
+                            textOverflow: "ellipsis",
+                            maxWidth: 90,
+                            minWidth: 0,
+                          }}
+                          title={row.note}
+                        >
+                          {row.note}
+                        </span>
+                      )}
                       <div className="rule-suggest">
                         <button
                           type="button"
