@@ -198,4 +198,82 @@ export async function reportRoutes(app: FastifyInstance) {
       return { months: keepMonths, categories, data };
     },
   );
+
+  // category-by-month breakdown for a single month or a whole calendar
+  // year, meant for the md export on Áttekintés — a plain "how much did I
+  // spend on what" table, not tied to "last N months from now" like
+  // monthly-by-category above
+  app.get<{ Querystring: { type?: TransactionType; month?: string; year?: string } }>(
+    "/api/reports/category-export",
+    async (req) => {
+      const type: TransactionType = req.query.type === "income" ? "income" : "expense";
+      const { month, year } = req.query;
+
+      let periods: string[];
+      if (year && /^\d{4}$/.test(year)) {
+        periods = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
+      } else if (month && /^\d{4}-\d{2}$/.test(month)) {
+        periods = [month];
+      } else {
+        const now = new Date();
+        periods = [`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`];
+      }
+
+      const [fy, fm] = periods[0].split("-").map(Number);
+      const [ly, lm] = periods[periods.length - 1].split("-").map(Number);
+      const lastDay = new Date(ly, lm, 0).getDate();
+      const from = `${fy}-${String(fm).padStart(2, "0")}-01`;
+      const to = `${ly}-${String(lm).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+      const rows = db
+        .prepare(
+          `SELECT
+             categories.id AS category_id,
+             COALESCE(categories.name, 'Kategorizálatlan') AS category_name,
+             strftime('%Y-%m', date) AS month,
+             SUM(transactions.amount) AS total
+           FROM transactions
+           LEFT JOIN categories ON categories.id = transactions.category_id
+           WHERE transactions.type = ? AND date >= ? AND date <= ?
+           GROUP BY categories.id, month`,
+        )
+        .all(type, from, to) as {
+        category_id: number | null;
+        category_name: string;
+        month: string;
+        total: number;
+      }[];
+
+      const categoryMap = new Map<
+        string,
+        { category_id: number | null; name: string; totals: Record<string, number> }
+      >();
+      for (const r of rows) {
+        const key = String(r.category_id);
+        if (!categoryMap.has(key)) {
+          categoryMap.set(key, { category_id: r.category_id, name: r.category_name, totals: {} });
+        }
+        categoryMap.get(key)!.totals[r.month] = r.total;
+      }
+
+      const categories = [...categoryMap.values()]
+        .map((c) => ({ ...c, total: Object.values(c.totals).reduce((s, v) => s + v, 0) }))
+        .sort((a, b) => b.total - a.total);
+
+      const periodTotals: Record<string, number> = {};
+      for (const p of periods) {
+        periodTotals[p] = categories.reduce((s, c) => s + (c.totals[p] ?? 0), 0);
+      }
+      const grandTotal = categories.reduce((s, c) => s + c.total, 0);
+
+      return {
+        scope: periods.length > 1 ? "year" : "month",
+        type,
+        periods,
+        categories,
+        periodTotals,
+        grandTotal,
+      };
+    },
+  );
 }

@@ -69,6 +69,15 @@ export interface ReportSummary {
   byMonth: { month: string; type: TransactionType; total: number }[];
 }
 
+export interface CategoryExport {
+  scope: "month" | "year";
+  type: TransactionType;
+  periods: string[];
+  categories: { category_id: number | null; name: string; totals: Record<string, number>; total: number }[];
+  periodTotals: Record<string, number>;
+  grandTotal: number;
+}
+
 export interface MonthlyComparisonCategory {
   category_id: number | null;
   category_name: string;

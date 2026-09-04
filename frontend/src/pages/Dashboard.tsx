@@ -15,6 +15,7 @@ import {
 import { api } from "../api";
 import {
   categoryColor,
+  formatDate,
   formatMoney,
   formatMonthLabel,
   monthKey,
@@ -22,13 +23,15 @@ import {
   toLocalDateInput,
 } from "../format";
 import { CategoryIcon } from "../IconPicker";
-import { IconChevronLeft, IconChevronRight } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconCopy, IconDownload, IconX } from "../icons";
 import type {
+  CategoryExport,
   MonthlyByCategory,
   MonthlyComparison,
   RecurringShare,
   ReportByCategory,
   ReportSummary,
+  Transaction,
   TransactionType,
 } from "../types";
 
@@ -73,6 +76,32 @@ export function Dashboard() {
       .finally(() => setTrendLoading(false));
   }, [trendType]);
 
+  const [copied, setCopied] = useState(false);
+  const [trendManualText, setTrendManualText] = useState<string | null>(null);
+
+  async function copyTrendMarkdown() {
+    if (!trend) return;
+    setTrendManualText(null);
+    const md = buildMonthlyMarkdown(trend, trendType);
+    if (await copyToClipboard(md)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      setTrendManualText(md);
+    }
+  }
+
+  function downloadTrendMarkdown() {
+    if (!trend) return;
+    const blob = new Blob([buildMonthlyMarkdown(trend, trendType)], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kategoriak-havonta-${trendType}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const [share, setShare] = useState<RecurringShare | null>(null);
   useEffect(() => {
     api.recurring.share(monthKey(monthOffset)).then(setShare);
@@ -95,6 +124,28 @@ export function Dashboard() {
     () => breakdown.reduce((sum, row) => sum + row.total, 0),
     [breakdown],
   );
+
+  const [categoryDetail, setCategoryDetail] = useState<{ row: ReportByCategory; rows: Transaction[] } | null>(
+    null,
+  );
+  const [categoryDetailLoading, setCategoryDetailLoading] = useState(false);
+
+  async function openCategoryDetail(row: ReportByCategory) {
+    setCategoryDetail({ row, rows: [] });
+    setCategoryDetailLoading(true);
+    try {
+      const { rows } = await api.transactions.list({
+        type: breakdownType,
+        categoryId: row.category_id === null ? "none" : String(row.category_id),
+        from,
+        to,
+        limit: "500",
+      });
+      setCategoryDetail({ row, rows });
+    } finally {
+      setCategoryDetailLoading(false);
+    }
+  }
 
   const [comparisonMonth, setComparisonMonth] = useState(monthKey());
   const [comparison, setComparison] = useState<MonthlyComparison | null>(null);
@@ -226,7 +277,12 @@ export function Dashboard() {
                       strokeWidth={2}
                     >
                       {breakdown.map((row) => (
-                        <Cell key={row.category_id ?? "none"} fill={categoryColor(row.category_id, row.category_color)} />
+                        <Cell
+                          key={row.category_id ?? "none"}
+                          fill={categoryColor(row.category_id, row.category_color)}
+                          cursor="pointer"
+                          onClick={() => openCategoryDetail(row)}
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => formatMoney(Number(value) || 0)} contentStyle={tooltipStyle} />
@@ -247,6 +303,8 @@ export function Dashboard() {
                         name={row.category_name}
                         fill={categoryColor(row.category_id, row.category_color)}
                         radius={[4, 4, 0, 0]}
+                        cursor="pointer"
+                        onClick={() => openCategoryDetail(row)}
                       />
                     ))}
                   </BarChart>
@@ -258,7 +316,11 @@ export function Dashboard() {
               {breakdown.map((row) => {
                 const pct = breakdownTotal ? (row.total / breakdownTotal) * 100 : 0;
                 return (
-                  <div key={row.category_id ?? "none"}>
+                  <div
+                    key={row.category_id ?? "none"}
+                    className="clickable-row"
+                    onClick={() => openCategoryDetail(row)}
+                  >
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 4 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                         <CategoryIcon icon={row.category_icon} color={categoryColor(row.category_id, row.category_color)} />
@@ -365,19 +427,39 @@ export function Dashboard() {
       <div className="card" style={{ marginTop: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <h2 style={{ fontSize: 17 }}>Kategóriák havonta</h2>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button
-              className={`btn ${trendType === "expense" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setTrendType("expense")}
-            >
-              Kiadás
-            </button>
-            <button
-              className={`btn ${trendType === "income" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setTrendType("income")}
-            >
-              Bevétel
-            </button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className="btn btn-ghost"
+                onClick={copyTrendMarkdown}
+                disabled={!trend || trend.months.length === 0}
+                title="Táblázat másolása Markdown formátumban"
+              >
+                <IconCopy /> {copied ? "Másolva" : "Másolás"}
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={downloadTrendMarkdown}
+                disabled={!trend || trend.months.length === 0}
+                title="Letöltés .md fájlként"
+              >
+                <IconDownload /> Export .md
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className={`btn ${trendType === "expense" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setTrendType("expense")}
+              >
+                Kiadás
+              </button>
+              <button
+                className={`btn ${trendType === "income" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setTrendType("income")}
+              >
+                Bevétel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -424,7 +506,86 @@ export function Dashboard() {
             </ResponsiveContainer>
           </div>
         )}
+
+        {trendManualText && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 6 }}>
+              A vágólap nem érhető el ezen a kapcsolaton — jelöld ki kézzel:
+            </div>
+            <textarea
+              readOnly
+              value={trendManualText}
+              rows={6}
+              style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </div>
+        )}
       </div>
+
+      <CategoryExportCard />
+
+      {categoryDetail && (
+        <div className="modal-backdrop" onClick={() => setCategoryDetail(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--hairline)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <CategoryIcon
+                  icon={categoryDetail.row.category_icon}
+                  color={categoryColor(categoryDetail.row.category_id, categoryDetail.row.category_color)}
+                />
+                <h2 style={{ fontSize: 16 }}>{categoryDetail.row.category_name}</h2>
+              </div>
+              <button className="btn btn-icon btn-ghost" onClick={() => setCategoryDetail(null)} title="Bezárás">
+                <IconX />
+              </button>
+            </div>
+
+            <div style={{ overflow: "auto" }}>
+              {categoryDetailLoading ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--ink-faint)" }}>Betöltés…</div>
+              ) : categoryDetail.rows.length === 0 ? (
+                <div className="empty-state">Nincs tranzakció ebben a kategóriában.</div>
+              ) : (
+                <table className="data-table">
+                  <tbody>
+                    {categoryDetail.rows.map((t) => (
+                      <tr key={t.id}>
+                        <td style={{ whiteSpace: "nowrap", color: "var(--ink-soft)" }}>{formatDate(t.date)}</td>
+                        <td>{t.description || <span style={{ color: "var(--ink-faint)" }}>—</span>}</td>
+                        <td className="tabular" style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                          {formatMoney(t.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid var(--hairline)",
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+              }}
+            >
+              <span style={{ color: "var(--ink-faint)" }}>{categoryDetail.rows.length} tétel</span>
+              <span className="tabular" style={{ fontWeight: 600 }}>{formatMoney(categoryDetail.row.total)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -432,6 +593,199 @@ export function Dashboard() {
 function formatMonthShort(month: string) {
   const [y, m] = month.split("-").map(Number);
   return new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(new Date(y, m - 1, 1));
+}
+
+// plain-number formatting for the markdown export — formatMoney's "Ft"
+// suffix and thousands-separator spaces are nice on screen but make a
+// markdown table noisier to read/paste elsewhere
+function formatPlain(value: number): string {
+  return new Intl.NumberFormat("hu-HU").format(Math.round(value));
+}
+
+function buildMonthlyMarkdown(trend: MonthlyByCategory, type: TransactionType): string {
+  const title = type === "expense" ? "Kiadás" : "Bevétel";
+  const header = `| Kategória | ${trend.months.map((m) => formatMonthLabel(m)).join(" | ")} | Összesen |`;
+  const divider = `| --- | ${trend.months.map(() => "---:").join(" | ")} | ---: |`;
+
+  const rows = trend.categories.map((cat) => {
+    const values = trend.months.map((m) => {
+      const entry = trend.data.find((d) => d.month === m);
+      return Number(entry?.[cat.name] ?? 0);
+    });
+    const rowTotal = values.reduce((sum, v) => sum + v, 0);
+    return `| ${cat.name} | ${values.map(formatPlain).join(" | ")} | ${formatPlain(rowTotal)} |`;
+  });
+
+  const monthTotals = trend.months.map((m) => {
+    const entry = trend.data.find((d) => d.month === m);
+    if (!entry) return 0;
+    return trend.categories.reduce((sum, cat) => sum + Number(entry[cat.name] ?? 0), 0);
+  });
+  const grandTotal = monthTotals.reduce((sum, v) => sum + v, 0);
+  const totalsRow = `| **Összesen** | ${monthTotals.map((t) => `**${formatPlain(t)}**`).join(" | ")} | **${formatPlain(grandTotal)}** |`;
+
+  return `# Kategóriák havonta — ${title}\n\n${header}\n${divider}\n${rows.join("\n")}\n${totalsRow}\n`;
+}
+
+// navigator.clipboard requires a secure context (HTTPS or localhost) — this
+// app is often reached over plain HTTP on a LAN/VPN, where it silently
+// rejects, so fall back to the old execCommand trick before giving up
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function buildCategoryExportMarkdown(data: CategoryExport): string {
+  const title = data.type === "expense" ? "Kiadás" : "Bevétel";
+
+  if (data.scope === "month") {
+    const rows = data.categories.map((c) => `| ${c.name} | ${formatPlain(c.total)} |`);
+    return `# ${title} kategóriánként — ${formatMonthLabel(data.periods[0])}\n\n| Kategória | Összeg |\n| --- | ---: |\n${rows.join("\n")}\n| **Összesen** | **${formatPlain(data.grandTotal)}** |\n`;
+  }
+
+  const year = data.periods[0].slice(0, 4);
+  const header = `| Kategória | ${data.periods.map((p) => formatMonthShort(p)).join(" | ")} | Összesen |`;
+  const divider = `| --- | ${data.periods.map(() => "---:").join(" | ")} | ---: |`;
+  const rows = data.categories.map(
+    (c) =>
+      `| ${c.name} | ${data.periods.map((p) => formatPlain(c.totals[p] ?? 0)).join(" | ")} | ${formatPlain(c.total)} |`,
+  );
+  const totalsRow = `| **Összesen** | ${data.periods.map((p) => `**${formatPlain(data.periodTotals[p] ?? 0)}**`).join(" | ")} | **${formatPlain(data.grandTotal)}** |`;
+
+  return `# ${title} kategóriánként — ${year}\n\n${header}\n${divider}\n${rows.join("\n")}\n${totalsRow}\n`;
+}
+
+function CategoryExportCard() {
+  const [scope, setScope] = useState<"month" | "year">("month");
+  const [type, setType] = useState<TransactionType>("expense");
+  const [month, setMonth] = useState(monthKey());
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [copied, setCopied] = useState(false);
+  const [manualText, setManualText] = useState<string | null>(null);
+
+  async function fetchMarkdown() {
+    const data =
+      scope === "month"
+        ? await api.reports.categoryExport({ type, month })
+        : await api.reports.categoryExport({ type, year });
+    const md = buildCategoryExportMarkdown(data);
+    const filename = scope === "month" ? `koltesek-${month}.md` : `koltesek-${year}.md`;
+    return { md, filename };
+  }
+
+  async function copy() {
+    setManualText(null);
+    const { md } = await fetchMarkdown();
+    if (await copyToClipboard(md)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      setManualText(md);
+    }
+  }
+
+  async function download() {
+    const { md, filename } = await fetchMarkdown();
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          marginBottom: 14,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
+        <div>
+          <h2 style={{ fontSize: 17 }}>Kategóriák exportálása</h2>
+          <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 4 }}>
+            Egy adott hónap vagy egy teljes naptári év kategória szerinti bontása, Markdown táblázatként.
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div className="field">
+            <label>Típus</label>
+            <select value={type} onChange={(e) => setType(e.target.value as TransactionType)}>
+              <option value="expense">Kiadás</option>
+              <option value="income">Bevétel</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Időszak</label>
+            <select value={scope} onChange={(e) => setScope(e.target.value as "month" | "year")}>
+              <option value="month">Hónap</option>
+              <option value="year">Év</option>
+            </select>
+          </div>
+          {scope === "month" ? (
+            <div className="field">
+              <label>Melyik hónap</label>
+              <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+            </div>
+          ) : (
+            <div className="field">
+              <label>Melyik év</label>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                style={{ width: 90 }}
+              />
+            </div>
+          )}
+          <button className="btn btn-ghost" type="button" onClick={copy} title="Táblázat másolása Markdown formátumban">
+            <IconCopy /> {copied ? "Másolva" : "Másolás"}
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={download} title="Letöltés .md fájlként">
+            <IconDownload /> Export .md
+          </button>
+        </div>
+      </div>
+
+      {manualText && (
+        <div>
+          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 6 }}>
+            A vágólap nem érhető el ezen a kapcsolaton — jelöld ki kézzel:
+          </div>
+          <textarea
+            readOnly
+            value={manualText}
+            rows={6}
+            style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function RecurringShareRow({

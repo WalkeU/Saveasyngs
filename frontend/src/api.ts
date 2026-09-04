@@ -2,6 +2,7 @@ import type {
   ActivityLogEntry,
   AppSettings,
   Category,
+  CategoryExport,
   CategoryRule,
   CategoryType,
   ImportPreview,
@@ -126,6 +127,11 @@ export const api = {
       if (params.months !== undefined) entries.push(["months", String(params.months)]);
       const query = new URLSearchParams(entries).toString();
       return request<MonthlyByCategory>(`/api/reports/monthly-by-category${query ? `?${query}` : ""}`);
+    },
+    categoryExport: (params: { type?: TransactionType; month?: string; year?: string }) => {
+      const entries = Object.entries(params).filter((e): e is [string, string] => Boolean(e[1]));
+      const query = new URLSearchParams(entries).toString();
+      return request<CategoryExport>(`/api/reports/category-export${query ? `?${query}` : ""}`);
     },
   },
   import: {

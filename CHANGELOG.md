@@ -5,6 +5,9 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- new "Kategóriák exportálása" card on Áttekintés — copy or download a Markdown table of category spending for a chosen month or a whole calendar year; the existing "Kategóriák havonta" chart also got its own quick copy/export of the rolling 6-month table it already shows. Both fall back to a select-to-copy textarea when the clipboard API isn't available (e.g. plain HTTP)
+- clicking a category (pie slice, bar, or list row) in "Kategóriák szerint" on Áttekintés now opens a popup listing the actual transactions behind that number for the selected period
+- Tranzakciók rows now show a short preview of the note's start next to the description (full text still in the tooltip/edit popover) — short notes fit entirely, longer ones truncate
 - fixed rules being able to duplicate — creating the same pattern for the same category (e.g. via the "learn this pattern" popup firing again for another transaction with an identical description) now reuses the existing rule instead of inserting a second copy; a one-time migration also cleans up any duplicates already in the database
 
 - new "Ismétlődők aránya" card on Áttekintés shows how big a slice of the browsed month's actual expense/income the enabled recurring items would account for (nominal recurring sum vs. that month's real total, as an amount + %) — follows the same month navigator already at the top of the page
