@@ -23,6 +23,31 @@ docker compose -f docker-compose.prod.yml down
 
 A portok a `.env` fájlban állíthatók (lásd [`.env.example`](./.env.example) — a `.env` maga nincs verziózva, csak sablon).
 
+## Auth (opcionális)
+
+Alapból nincs bejelentkezés — az app arra épít, hogy a hálózati szintet te
+véded (pl. VPN). Ha szeretnél egy jelszavas belépést is ráadásul (pl. mert
+nem csak VPN-en, hanem publikusan is elérhető lesz), állítsd be a `.env`-ben:
+
+```
+AUTH_PASSWORD_HASH=...   # bcrypt hash, lásd lentebb
+SESSION_KEY=...          # 32 bájtos hex kulcs, lásd lentebb
+COOKIE_SECURE=false      # true, ha már valódi TLS van előtte
+```
+
+Jelszó-hash generálása:
+```
+docker compose -f docker-compose.prod.yml run --rm backend node -e "console.log(require('bcrypt').hashSync(process.argv[1], 12))" 'a-jelszavad'
+```
+
+Session kulcs generálása:
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Ha `AUTH_PASSWORD_HASH` üres marad, minden pontosan úgy működik, mint eddig
+— nincs login képernyő, semmi extra lépés.
+
 ## Mi ez?
 
 Egyszerű, önhostolt személyes pénzügyi alkalmazás: költések rögzítése és

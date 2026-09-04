@@ -26,6 +26,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       : undefined,
     ...init,
   });
+  // the session expired mid-use (or was never established) — reload so
+  // main.tsx's bootstrap re-checks auth status and shows the login screen;
+  // a failed login attempt itself should just surface as an error instead
+  if (res.status === 401 && path !== "/api/auth/login") {
+    window.location.reload();
+    return new Promise<T>(() => {});
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Request failed: ${res.status}`);
@@ -149,6 +156,15 @@ export const api = {
   },
   config: {
     get: () => request<{ legacyCategoryImport: boolean }>("/api/config"),
+  },
+  auth: {
+    status: () => request<{ authRequired: boolean; authenticated: boolean }>("/api/auth/status"),
+    login: (password: string) =>
+      request<{ authenticated: boolean }>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      }),
+    logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   },
   settings: {
     get: () => request<AppSettings>("/api/settings"),

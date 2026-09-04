@@ -5,6 +5,7 @@ import "./index.css";
 import { api } from "./api";
 import { setDecimalPlaces } from "./format";
 import { Layout } from "./Layout";
+import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { Transactions } from "./pages/Transactions";
 import { Import } from "./pages/Import";
@@ -16,6 +17,28 @@ import { Settings } from "./pages/Settings";
 import { History } from "./pages/History";
 
 async function bootstrap() {
+  const root = createRoot(document.getElementById("root")!);
+
+  let authRequired = false;
+  let authenticated = true;
+  try {
+    const status = await api.auth.status();
+    authRequired = status.authRequired;
+    authenticated = status.authenticated;
+  } catch {
+    // can't reach the backend at all — let it through; every subsequent
+    // API call will fail the same way, so this isn't an auth bypass
+  }
+
+  if (authRequired && !authenticated) {
+    root.render(
+      <StrictMode>
+        <Login onSuccess={() => window.location.reload()} />
+      </StrictMode>,
+    );
+    return;
+  }
+
   try {
     const settings = await api.settings.get();
     setDecimalPlaces(settings.decimalPlaces);
@@ -23,11 +46,11 @@ async function bootstrap() {
     // fall back to the default (0) if settings can't be reached
   }
 
-  createRoot(document.getElementById("root")!).render(
+  root.render(
     <StrictMode>
       <BrowserRouter>
         <Routes>
-          <Route element={<Layout />}>
+          <Route element={<Layout authEnabled={authRequired} />}>
             <Route index element={<Dashboard />} />
             <Route path="tranzakciok" element={<Transactions />} />
             <Route path="megtakaritas" element={<Savings />} />

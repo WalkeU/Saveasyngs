@@ -5,6 +5,7 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- optional single-password login (`AUTH_PASSWORD_HASH` + `SESSION_KEY` env vars, see README "Auth") — bcrypt-hashed password, signed httpOnly session cookie, rate-limited login endpoint (10 attempts / 5 min). Off by default, so nothing changes for setups relying on network-level access control (e.g. VPN) instead
 - app renamed to **Saveasy**, with a new favicon/brand mark (green rounded square, replacing the generic placeholder icon) — shown in the browser tab, and the sidebar now renders that same favicon.svg file instead of a separately CSS-drawn "S"
 - new Előzmények page keeps a running log of the last 50 changes (transactions created/edited/deleted, bulk deletes, liquid pénz overrides) — nothing older than that is kept
 - "Szabad (liquid) pénz" no longer shows a "kézi" badge or a revert-to-calculated button once you've typed a real number in — whatever you set it to is now just accepted as the figure, full stop

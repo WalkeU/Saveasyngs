@@ -1,6 +1,10 @@
+import { randomBytes } from "node:crypto";
+import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import Fastify from "fastify";
+import { AUTH_ENABLED, isAuthenticated } from "./auth.js";
 import { healthRoutes } from "./routes/health.js";
+import { authRoutes } from "./routes/auth.js";
 import { categoryRoutes } from "./routes/categories.js";
 import { ruleRoutes } from "./routes/rules.js";
 import { transactionRoutes } from "./routes/transactions.js";
@@ -14,11 +18,35 @@ import { bucketRoutes } from "./routes/buckets.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { historyRoutes } from "./routes/history.js";
 
+if (AUTH_ENABLED && !process.env.SESSION_KEY) {
+  console.error(
+    "AUTH_PASSWORD_HASH is set but SESSION_KEY is missing. Generate one with:\n" +
+      `  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"\n` +
+      "and set it as the SESSION_KEY environment variable.",
+  );
+  process.exit(1);
+}
+// when auth is disabled, the session cookie is never set or checked, so an
+// ephemeral secret (thrown away on restart) is fine here
+const sessionSecret = process.env.SESSION_KEY ?? randomBytes(32).toString("hex");
+
 const app = Fastify({ logger: true });
 
 await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
+await app.register(cookie, { secret: sessionSecret });
+
+const PUBLIC_PATHS = ["/api/health", "/api/auth/status", "/api/auth/login", "/api/auth/logout"];
+app.addHook("onRequest", async (req, reply) => {
+  if (!AUTH_ENABLED) return;
+  const path = req.url.split("?")[0];
+  if (PUBLIC_PATHS.includes(path)) return;
+  if (!isAuthenticated(req)) {
+    return reply.code(401).send({ error: "unauthorized" });
+  }
+});
 
 await app.register(healthRoutes);
+await app.register(authRoutes);
 await app.register(categoryRoutes);
 await app.register(ruleRoutes);
 await app.register(transactionRoutes);

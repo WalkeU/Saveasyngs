@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { api } from "./api";
 import {
   IconGrid,
   IconHistory,
   IconList,
+  IconLogout,
   IconPiggyBank,
   IconRepeat,
   IconSettings,
@@ -23,7 +25,12 @@ const NAV = [
   { to: "/beallitasok", label: "Beállítások", icon: IconSettings },
 ];
 
-export function Layout() {
+export function Layout({ authEnabled }: { authEnabled: boolean }) {
+  async function logout() {
+    await api.auth.logout();
+    window.location.reload();
+  }
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -43,6 +50,12 @@ export function Layout() {
               <span>{label}</span>
             </NavLink>
           ))}
+          {authEnabled && (
+            <button type="button" className="nav-link nav-logout" onClick={logout}>
+              <IconLogout />
+              <span>Kijelentkezés</span>
+            </button>
+          )}
         </nav>
         <div className="sidebar-foot">privát hálózat · v0.1</div>
       </aside>
@@ -108,6 +121,19 @@ export function Layout() {
         .nav-link.is-active {
           background: var(--accent-soft);
           color: var(--accent-soft-ink);
+        }
+        .nav-logout {
+          background: none;
+          border: none;
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
+          font-family: inherit;
+          margin-top: 8px;
+        }
+        .nav-logout:hover {
+          background: var(--paper-raised);
+          color: var(--expense);
         }
         .sidebar-foot {
           margin-top: auto;
