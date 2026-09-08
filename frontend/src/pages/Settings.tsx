@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { setDecimalPlaces } from "../format";
+import { IconDownload } from "../icons";
 import type { AppSettings } from "../types";
 
 export function Settings() {
@@ -81,7 +82,67 @@ export function Settings() {
             )}
           </div>
 
+          <BackupCard />
+
           {authRequired && <PasswordCard />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BackupCard() {
+  const [file, setFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function doImport() {
+    if (!file) return;
+    const ok = window.confirm(
+      "Ez felülírja a jelenlegi adatbázis ÖSSZES adatát a feltöltött fájl tartalmával. Ez nem visszavonható. Biztosan folytatod?",
+    );
+    if (!ok) return;
+    setImporting(true);
+    setError(null);
+    try {
+      await api.backup.import(file);
+      setDone(true);
+      setTimeout(() => window.location.reload(), 1200);
+    } catch {
+      setError("A visszaállítás nem sikerült — ellenőrizd, hogy a fájl érvényes-e.");
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <h2 style={{ fontSize: 17, marginBottom: 6 }}>Biztonsági mentés</h2>
+      <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginBottom: 14 }}>
+        A teljes adatbázis le- és visszatöltése — költözéshez egy másik szerverre, vagy sima
+        backuphoz. A visszaállítás felülírja az összes jelenlegi adatot.
+      </div>
+
+      {done ? (
+        <div style={{ fontSize: 13, color: "var(--accent)" }}>Visszaállítva — az oldal újratöltődik…</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>Export</div>
+            <a className="btn btn-primary" href={api.backup.exportUrl}>
+              <IconDownload size={14} /> Teljes export letöltése
+            </a>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>Visszaállítás</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <input type="file" accept=".db" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <button className="btn btn-danger" disabled={!file || importing} onClick={doImport}>
+                Visszaállítás
+              </button>
+            </div>
+            {error && <div style={{ fontSize: 12, color: "var(--expense)", marginTop: 8 }}>{error}</div>}
+          </div>
         </div>
       )}
     </div>

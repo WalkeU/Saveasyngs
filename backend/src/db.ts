@@ -6,91 +6,13 @@ import { defaultCategories } from "./default-categories.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const dbPath = process.env.DB_PATH ?? join(__dirname, "..", "data", "savings.db");
+export const dbPath = process.env.DB_PATH ?? join(__dirname, "..", "data", "savings.db");
 
-export const db = new Database(dbPath);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
-
-const schema = readFileSync(join(__dirname, "db", "schema.sql"), "utf-8");
-db.exec(schema);
-
-// added after the initial release; ignore the error on databases that already have it
-try {
-  db.exec("ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
-  // give existing rows a stable initial order instead of leaving them all at 0
-  db.exec(`
-    UPDATE categories
-    SET sort_order = ranked.rn
-    FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY type ORDER BY id) - 1 AS rn FROM categories) AS ranked
-    WHERE categories.id = ranked.id
-  `);
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE categories ADD COLUMN icon TEXT");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE transactions ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE recurring_payments ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
-} catch {
-  // column already exists
-}
-
-// safe to run every startup: the column above is now guaranteed to exist
-db.exec("CREATE INDEX IF NOT EXISTS idx_transactions_bucket ON transactions(bucket_id)");
-
-try {
-  db.exec("ALTER TABLE savings_buckets ADD COLUMN note TEXT");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE savings_buckets ADD COLUMN manual_value REAL");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE transactions ADD COLUMN time TEXT");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE transactions ADD COLUMN note TEXT");
-} catch {
-  // column already exists
-}
-
-try {
-  db.exec("ALTER TABLE app_settings ADD COLUMN transactions_batch_size INTEGER NOT NULL DEFAULT 100");
-} catch {
-  // column already exists
-}
-
-db.exec("INSERT OR IGNORE INTO app_settings (id, decimal_places) VALUES (1, 0)");
-
-// legacy pre-seed path: AUTH_PASSWORD_HASH used to be the only way to set
-// the password (via env var). Still honored on first boot only — never
-// overwrites a hash already set through the app (setup/change-password),
-// which live in the auth_config row instead of the environment now.
-if (process.env.AUTH_PASSWORD_HASH) {
-  db.prepare("INSERT OR IGNORE INTO auth_config (id, password_hash) VALUES (1, ?)").run(
-    process.env.AUTH_PASSWORD_HASH,
-  );
-}
+// reassigned by openDatabase() — e.g. after a backup restore swaps the
+// underlying file out from under us. Other modules import { db } and read
+// it at call time (a live ES module binding), so they transparently pick
+// up the new connection without needing to re-import anything.
+export let db: Database.Database;
 
 function migrate(name: string, run: () => void) {
   const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get(name);
@@ -101,176 +23,268 @@ function migrate(name: string, run: () => void) {
   })();
 }
 
-// replaces the old Hungarian/interim default categories with the fixed English
-// taxonomy above; transactions referencing a deleted category fall back to
-// null (ON DELETE SET NULL) instead of being lost, and any category the user
-// actually created themselves is untouched since this only runs once, ever
-migrate("2026-09-category-taxonomy-en", () => {
-  db.exec("DELETE FROM categories");
-});
+// opens (or re-opens) the database and brings it fully up to date: schema,
+// additive column shims, and one-time migrations. Idempotent — safe to call
+// again against an already-current database, which is what a backup
+// restore does instead of restarting the whole process.
+export function openDatabase(): void {
+  db = new Database(dbPath);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
 
-// backfills the default icon for databases whose categories already existed
-// before the icon column was added; never overwrites a chosen icon, and
-// never touches a category outside the fixed default names
-migrate("2026-09-category-icons", () => {
-  const setIcon = db.prepare(
-    "UPDATE categories SET icon = ? WHERE name = ? AND type = ? AND icon IS NULL",
+  const schema = readFileSync(join(__dirname, "db", "schema.sql"), "utf-8");
+  db.exec(schema);
+
+  // added after the initial release; ignore the error on databases that already have it
+  try {
+    db.exec("ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
+    // give existing rows a stable initial order instead of leaving them all at 0
+    db.exec(`
+      UPDATE categories
+      SET sort_order = ranked.rn
+      FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY type ORDER BY id) - 1 AS rn FROM categories) AS ranked
+      WHERE categories.id = ranked.id
+    `);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE categories ADD COLUMN icon TEXT");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE transactions ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE recurring_payments ADD COLUMN bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL");
+  } catch {
+    // column already exists
+  }
+
+  // safe to run every startup: the column above is now guaranteed to exist
+  db.exec("CREATE INDEX IF NOT EXISTS idx_transactions_bucket ON transactions(bucket_id)");
+
+  try {
+    db.exec("ALTER TABLE savings_buckets ADD COLUMN note TEXT");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE savings_buckets ADD COLUMN manual_value REAL");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE transactions ADD COLUMN time TEXT");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE transactions ADD COLUMN note TEXT");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec("ALTER TABLE app_settings ADD COLUMN transactions_batch_size INTEGER NOT NULL DEFAULT 100");
+  } catch {
+    // column already exists
+  }
+
+  db.exec("INSERT OR IGNORE INTO app_settings (id, decimal_places) VALUES (1, 0)");
+
+  // legacy pre-seed path: AUTH_PASSWORD_HASH used to be the only way to set
+  // the password (via env var). Still honored on first boot only — never
+  // overwrites a hash already set through the app (setup/change-password),
+  // which live in the auth_config row instead of the environment now.
+  if (process.env.AUTH_PASSWORD_HASH) {
+    db.prepare("INSERT OR IGNORE INTO auth_config (id, password_hash) VALUES (1, ?)").run(
+      process.env.AUTH_PASSWORD_HASH,
+    );
+  }
+
+  // replaces the old Hungarian/interim default categories with the fixed English
+  // taxonomy above; transactions referencing a deleted category fall back to
+  // null (ON DELETE SET NULL) instead of being lost, and any category the user
+  // actually created themselves is untouched since this only runs once, ever
+  migrate("2026-09-category-taxonomy-en", () => {
+    db.exec("DELETE FROM categories");
+  });
+
+  // backfills the default icon for databases whose categories already existed
+  // before the icon column was added; never overwrites a chosen icon, and
+  // never touches a category outside the fixed default names
+  migrate("2026-09-category-icons", () => {
+    const setIcon = db.prepare(
+      "UPDATE categories SET icon = ? WHERE name = ? AND type = ? AND icon IS NULL",
+    );
+    for (const category of defaultCategories) {
+      setIcon.run(category.icon, category.name, category.type);
+    }
+  });
+
+  // widens categories.type and transactions.type to allow 'savings' in
+  // addition to 'expense'/'income'; SQLite can't ALTER a CHECK constraint,
+  // so this rebuilds both tables (the documented rename-table procedure)
+  // and drops the old, never-used savings_goals/savings_contributions
+  // tables that the new savings-category model replaces
+  {
+    const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-type-widen");
+    if (!applied) {
+      db.pragma("foreign_keys = OFF");
+      db.transaction(() => {
+        db.exec(`
+          CREATE TABLE categories_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+            color TEXT,
+            icon TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE (name, type)
+          );
+          INSERT INTO categories_new (id, name, type, color, icon, sort_order, created_at)
+            SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
+          DROP TABLE categories;
+          ALTER TABLE categories_new RENAME TO categories;
+
+          CREATE TABLE transactions_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
+            amount REAL NOT NULL CHECK (amount > 0),
+            description TEXT NOT NULL DEFAULT '',
+            category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+            bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL,
+            date TEXT NOT NULL,
+            time TEXT,
+            note TEXT,
+            source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'import')),
+            import_hash TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          INSERT INTO transactions_new (id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at)
+            SELECT id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at FROM transactions;
+          DROP TABLE transactions;
+          ALTER TABLE transactions_new RENAME TO transactions;
+
+          CREATE UNIQUE INDEX idx_transactions_import_hash ON transactions(import_hash) WHERE import_hash IS NOT NULL;
+          CREATE INDEX idx_transactions_date ON transactions(date);
+          CREATE INDEX idx_transactions_category ON transactions(category_id);
+          CREATE INDEX idx_transactions_type ON transactions(type);
+
+          DROP TABLE IF EXISTS savings_contributions;
+          DROP TABLE IF EXISTS savings_goals;
+        `);
+        db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-type-widen");
+      })();
+      db.pragma("foreign_keys = ON");
+    }
+  }
+
+  // splits savings out of the category system entirely: every type='savings'
+  // category becomes a savings_buckets row (by name), transactions and
+  // recurring_payments pointing at it get repointed via bucket_id instead of
+  // category_id, then categories.type is narrowed back to expense/income only
+  // (another table rebuild, since SQLite can't shrink a CHECK constraint)
+  {
+    const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-buckets-split");
+    if (!applied) {
+      db.pragma("foreign_keys = OFF");
+      db.transaction(() => {
+        const savingsCategories = db.prepare("SELECT * FROM categories WHERE type = 'savings'").all() as {
+          id: number;
+          name: string;
+          color: string | null;
+          icon: string | null;
+          sort_order: number;
+        }[];
+
+        const insertBucket = db.prepare(
+          "INSERT OR IGNORE INTO savings_buckets (name, color, icon, sort_order) VALUES (?, ?, ?, ?)",
+        );
+        const findBucketId = db.prepare("SELECT id FROM savings_buckets WHERE name = ?");
+        const repointTransactions = db.prepare(
+          "UPDATE transactions SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
+        );
+        const repointRecurring = db.prepare(
+          "UPDATE recurring_payments SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
+        );
+
+        for (const category of savingsCategories) {
+          insertBucket.run(category.name, category.color, category.icon, category.sort_order);
+          const bucket = findBucketId.get(category.name) as { id: number };
+          repointTransactions.run(bucket.id, category.id);
+          repointRecurring.run(bucket.id, category.id);
+        }
+
+        db.exec(`
+          DELETE FROM categories WHERE type = 'savings';
+
+          CREATE TABLE categories_new2 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
+            color TEXT,
+            icon TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE (name, type)
+          );
+          INSERT INTO categories_new2 (id, name, type, color, icon, sort_order, created_at)
+            SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
+          DROP TABLE categories;
+          ALTER TABLE categories_new2 RENAME TO categories;
+        `);
+
+        db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-buckets-split");
+      })();
+      db.pragma("foreign_keys = ON");
+    }
+  }
+
+  // removed: a separate "opening balance" setting for net worth. Simpler to
+  // have one place for money in (income transactions) than to reconcile an
+  // opening balance against them — if you had savings before you started
+  // tracking, just add them as a manual income transaction.
+  migrate("2026-09-drop-net-worth-opening", () => {
+    db.exec("DROP TABLE IF EXISTS net_worth_opening");
+  });
+
+  // POST /api/rules used to insert unconditionally, so the same pattern could
+  // be saved for the same category more than once (e.g. the "learn this
+  // pattern" popup firing again for another transaction with the same
+  // description). Keeps the oldest row per (pattern, category) pair; going
+  // forward the route itself checks before inserting.
+  migrate("2026-09-dedupe-rules", () => {
+    db.exec(`
+      DELETE FROM category_rules
+      WHERE id NOT IN (
+        SELECT MIN(id) FROM category_rules GROUP BY LOWER(TRIM(pattern)), category_id
+      )
+    `);
+  });
+
+  const insertCategory = db.prepare(
+    "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
   );
-  for (const category of defaultCategories) {
-    setIcon.run(category.icon, category.name, category.type);
-  }
-});
-
-// widens categories.type and transactions.type to allow 'savings' in
-// addition to 'expense'/'income'; SQLite can't ALTER a CHECK constraint,
-// so this rebuilds both tables (the documented rename-table procedure)
-// and drops the old, never-used savings_goals/savings_contributions
-// tables that the new savings-category model replaces
-{
-  const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-type-widen");
-  if (!applied) {
-    db.pragma("foreign_keys = OFF");
-    db.transaction(() => {
-      db.exec(`
-        CREATE TABLE categories_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
-          color TEXT,
-          icon TEXT,
-          sort_order INTEGER NOT NULL DEFAULT 0,
-          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-          UNIQUE (name, type)
-        );
-        INSERT INTO categories_new (id, name, type, color, icon, sort_order, created_at)
-          SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
-        DROP TABLE categories;
-        ALTER TABLE categories_new RENAME TO categories;
-
-        CREATE TABLE transactions_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'savings')),
-          amount REAL NOT NULL CHECK (amount > 0),
-          description TEXT NOT NULL DEFAULT '',
-          category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-          bucket_id INTEGER REFERENCES savings_buckets(id) ON DELETE SET NULL,
-          date TEXT NOT NULL,
-          time TEXT,
-          note TEXT,
-          source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'import')),
-          import_hash TEXT,
-          created_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        INSERT INTO transactions_new (id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at)
-          SELECT id, type, amount, description, category_id, bucket_id, date, time, note, source, import_hash, created_at FROM transactions;
-        DROP TABLE transactions;
-        ALTER TABLE transactions_new RENAME TO transactions;
-
-        CREATE UNIQUE INDEX idx_transactions_import_hash ON transactions(import_hash) WHERE import_hash IS NOT NULL;
-        CREATE INDEX idx_transactions_date ON transactions(date);
-        CREATE INDEX idx_transactions_category ON transactions(category_id);
-        CREATE INDEX idx_transactions_type ON transactions(type);
-
-        DROP TABLE IF EXISTS savings_contributions;
-        DROP TABLE IF EXISTS savings_goals;
-      `);
-      db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-type-widen");
-    })();
-    db.pragma("foreign_keys = ON");
-  }
+  const seedCategories = db.transaction((categories: typeof defaultCategories) => {
+    const nextOrder: Record<string, number> = { expense: 0, income: 0 };
+    for (const category of categories) {
+      const sortOrder = nextOrder[category.type]++;
+      insertCategory.run({ ...category, sortOrder });
+    }
+  });
+  seedCategories(defaultCategories);
 }
 
-// splits savings out of the category system entirely: every type='savings'
-// category becomes a savings_buckets row (by name), transactions and
-// recurring_payments pointing at it get repointed via bucket_id instead of
-// category_id, then categories.type is narrowed back to expense/income only
-// (another table rebuild, since SQLite can't shrink a CHECK constraint)
-{
-  const applied = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("2026-09-savings-buckets-split");
-  if (!applied) {
-    db.pragma("foreign_keys = OFF");
-    db.transaction(() => {
-      const savingsCategories = db.prepare("SELECT * FROM categories WHERE type = 'savings'").all() as {
-        id: number;
-        name: string;
-        color: string | null;
-        icon: string | null;
-        sort_order: number;
-      }[];
-
-      const insertBucket = db.prepare(
-        "INSERT OR IGNORE INTO savings_buckets (name, color, icon, sort_order) VALUES (?, ?, ?, ?)",
-      );
-      const findBucketId = db.prepare("SELECT id FROM savings_buckets WHERE name = ?");
-      const repointTransactions = db.prepare(
-        "UPDATE transactions SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
-      );
-      const repointRecurring = db.prepare(
-        "UPDATE recurring_payments SET bucket_id = ?, category_id = NULL WHERE category_id = ?",
-      );
-
-      for (const category of savingsCategories) {
-        insertBucket.run(category.name, category.color, category.icon, category.sort_order);
-        const bucket = findBucketId.get(category.name) as { id: number };
-        repointTransactions.run(bucket.id, category.id);
-        repointRecurring.run(bucket.id, category.id);
-      }
-
-      db.exec(`
-        DELETE FROM categories WHERE type = 'savings';
-
-        CREATE TABLE categories_new2 (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
-          color TEXT,
-          icon TEXT,
-          sort_order INTEGER NOT NULL DEFAULT 0,
-          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-          UNIQUE (name, type)
-        );
-        INSERT INTO categories_new2 (id, name, type, color, icon, sort_order, created_at)
-          SELECT id, name, type, color, icon, sort_order, created_at FROM categories;
-        DROP TABLE categories;
-        ALTER TABLE categories_new2 RENAME TO categories;
-      `);
-
-      db.prepare("INSERT INTO _migrations (name) VALUES (?)").run("2026-09-savings-buckets-split");
-    })();
-    db.pragma("foreign_keys = ON");
-  }
-}
-
-// removed: a separate "opening balance" setting for net worth. Simpler to
-// have one place for money in (income transactions) than to reconcile an
-// opening balance against them — if you had savings before you started
-// tracking, just add them as a manual income transaction.
-migrate("2026-09-drop-net-worth-opening", () => {
-  db.exec("DROP TABLE IF EXISTS net_worth_opening");
-});
-
-// POST /api/rules used to insert unconditionally, so the same pattern could
-// be saved for the same category more than once (e.g. the "learn this
-// pattern" popup firing again for another transaction with the same
-// description). Keeps the oldest row per (pattern, category) pair; going
-// forward the route itself checks before inserting.
-migrate("2026-09-dedupe-rules", () => {
-  db.exec(`
-    DELETE FROM category_rules
-    WHERE id NOT IN (
-      SELECT MIN(id) FROM category_rules GROUP BY LOWER(TRIM(pattern)), category_id
-    )
-  `);
-});
-
-const insertCategory = db.prepare(
-  "INSERT OR IGNORE INTO categories (name, type, icon, sort_order) VALUES (@name, @type, @icon, @sortOrder)",
-);
-const seedCategories = db.transaction((categories: typeof defaultCategories) => {
-  const nextOrder: Record<string, number> = { expense: 0, income: 0 };
-  for (const category of categories) {
-    const sortOrder = nextOrder[category.type]++;
-    insertCategory.run({ ...category, sortOrder });
-  }
-});
-seedCategories(defaultCategories);
+openDatabase();

@@ -194,6 +194,17 @@ export const api = {
   history: {
     list: () => request<ActivityLogEntry[]>("/api/history"),
   },
+  backup: {
+    exportUrl: "/api/backup/export",
+    import: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return request<{ ok: boolean }>("/api/backup/import", {
+        method: "POST",
+        body: form,
+      });
+    },
+  },
   networth: {
     get: () => request<NetWorth>("/api/networth"),
     setLiquid: (value: number | null) =>

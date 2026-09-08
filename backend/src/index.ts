@@ -17,6 +17,7 @@ import { recurringRoutes } from "./routes/recurring.js";
 import { bucketRoutes } from "./routes/buckets.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { historyRoutes } from "./routes/history.js";
+import { backupRoutes } from "./routes/backup.js";
 
 if (AUTH_ENABLED && !process.env.SESSION_KEY) {
   console.error(
@@ -64,6 +65,7 @@ await app.register(recurringRoutes);
 await app.register(bucketRoutes);
 await app.register(settingsRoutes);
 await app.register(historyRoutes);
+await app.register(backupRoutes);
 
 // off by default: a one-off backfill tool for a specific legacy export,
 // not part of the normal product surface

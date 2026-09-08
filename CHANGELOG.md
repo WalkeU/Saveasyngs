@@ -5,6 +5,8 @@ kerül az új bejegyzés.
 
 ## Unreleased
 
+- new "Biztonsági mentés" card on Beállítások — export the whole database as a single downloadable file, and restore it later (same server, or a fresh one when moving hosts) by uploading it back. Restore swaps the file and re-opens the database in place, no restart or downtime; a safety copy of whatever was there gets kept alongside on disk before it's overwritten
+
 - new "Kategóriák exportálása" card on Áttekintés — copy or download a Markdown table of category spending for a chosen month or a whole calendar year; the existing "Kategóriák havonta" chart also got its own quick copy/export of the rolling 6-month table it already shows. Both fall back to a select-to-copy textarea when the clipboard API isn't available (e.g. plain HTTP)
 - clicking a category (pie slice, bar, or list row) in "Kategóriák szerint" on Áttekintés now opens a popup listing the actual transactions behind that number for the selected period
 - Tranzakciók rows now show a short preview of the note's start next to the description (full text still in the tooltip/edit popover) — short notes fit entirely, longer ones truncate
