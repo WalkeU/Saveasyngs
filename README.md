@@ -1,60 +1,48 @@
 # Saveasy
 
-Első indítás előtt (csak egyszer):
+A small, self-hosted personal finance app: import bank exports, categorise spending automatically and keep track of savings goals. Built to run on a home server or behind a VPN with minimal resources. The UI is in Hungarian.
+
+**Stack:** TypeScript · React · Vite · Recharts · Fastify · SQLite (better-sqlite3) · Caddy · Docker
+
+## Features
+
+- **CSV import** of bank exports (e.g. Revolut) with automatic column mapping, time of day support and hash based duplicate detection, so importing the same file twice never creates duplicates.
+- **Rules engine:** if a description matches a pattern, the category is applied on import and retroactively to uncategorised transactions. When you categorise manually, the app suggests a new rule, but never creates one silently.
+- **Dashboard:** spending by category and period, monthly category trends, drill-down from any chart slice to the underlying transactions, Markdown export of category tables.
+- **Savings:** separate savings buckets with transfers from liquid money, optional manual market value (for stocks or crypto) and notes.
+- **Recurring items** and their share of the monthly total.
+- **Transactions:** infinite scroll, bulk select and delete, inline editing with math expressions (`31000-3000`), notes.
+- **History** of the last 50 changes, and full database **backup and restore** from the UI without downtime.
+- **Optional login:** single password, bcrypt hashed, signed httpOnly session cookie, rate limited endpoints. Off by default for VPN-only setups.
+
+## Architecture
+
+```
+          :80
+           |
+       [ Caddy ] --- /       -> static React build
+           |     --- /api/*  -> Fastify backend -> SQLite file (volume)
+```
+
+Separate dev and prod Docker Compose stacks, each with isolated data. Details in [PROJECT.md](PROJECT.md).
+
+## Quick start
+
+```bash
 cp .env.example .env
-
-Dev indítása:
-docker compose -f docker-compose.dev.yml up -d --build
-
-Dev leállítása:
-docker compose -f docker-compose.dev.yml down
-
-Prod indítása:
-docker compose -f docker-compose.prod.yml up -d --build
-
-Prod leállítása:
-docker compose -f docker-compose.prod.yml down
-
-## Elérés
-
-- Dev frontend: `http://localhost:$FRONTEND_PORT`
-- Dev backend: `http://localhost:$BACKEND_PORT/api/health`
-- Prod: `http://localhost:$HTTP_PORT`
-
-A portok a `.env` fájlban állíthatók (lásd [`.env.example`](./.env.example) — a `.env` maga nincs verziózva, csak sablon).
-
-## Auth (opcionális)
-
-Alapból nincs bejelentkezés — az app arra épít, hogy a hálózati szintet te
-véded (pl. VPN). Ha szeretnél egy jelszavas belépést is ráadásul (pl. mert
-nem csak VPN-en, hanem publikusan is elérhető lesz), állítsd be a `.env`-ben:
-
-```
-AUTH_ENABLED=true
-SESSION_KEY=...   # 32 bájtos hex kulcs, lásd lentebb
-COOKIE_SECURE=false  # true, ha már valódi TLS van előtte
+docker compose -f docker-compose.prod.yml up -d --build   # prod, served on HTTP_PORT
+docker compose -f docker-compose.dev.yml up -d --build    # dev with hot reload
 ```
 
-Session kulcs generálása:
-```
+To enable login, set `AUTH_ENABLED=true` and a 32 byte hex `SESSION_KEY` in `.env`:
+
+```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Ezután az app első megnyitásakor jelszót kér tőled (nincs hash-generálás,
-nincs docker exec) — onnantól az a jelszó kell a belépéshez, bejelentkezés
-után pedig a Beállításokban bármikor módosíthatod.
+The app then asks you to set a password the first time you open it.
 
-Ha `AUTH_ENABLED` üres/false marad, minden pontosan úgy működik, mint eddig
-— nincs login képernyő, semmi extra lépés.
+## Docs
 
-## Mi ez?
-
-Egyszerű, önhostolt személyes pénzügyi alkalmazás: költések rögzítése és
-csoportosítása, kimutatások, megtakarítások (savings) vezetése, havi
-befizetések követése. Részletek: [`PROJECT.md`](./PROJECT.md).
-
-## Kapcsolódó fájlok
-
-- [`PROJECT.md`](./PROJECT.md) — koncepció, stack, architektúra
-- [`CHANGELOG.md`](./CHANGELOG.md) — release-ek és feature-ök
-- [`TODO.md`](./TODO.md) — nyitott pontok, teendők
+- [PROJECT.md](PROJECT.md): concept, stack and architecture (Hungarian)
+- [CHANGELOG.md](CHANGELOG.md): releases and features
